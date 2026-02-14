@@ -290,14 +290,6 @@ export default function CharactersPage({ user, onLogout }) {
                 <User className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium text-text-secondary">{user.username || user.name || user.email}</span>
               </div>
-              <Button
-                data-testid="logout-btn"
-                onClick={onLogout}
-                variant="ghost"
-                className="text-text-secondary hover:text-white hover:bg-white/5 rounded-xl"
-              >
-                Logout
-              </Button>
             </div>
           </div>
         </div>
