@@ -137,7 +137,7 @@ export default function LandingPage({ user, onLogout }) {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
                 data-testid="hero-cta-btn"
-                onClick={() => navigate('/auth')}
+                onClick={() => navigate('/auth', { state: { mode: 'signup' } })}
                 className="bg-gradient-to-r from-primary to-accent-purple hover:from-primary/90 hover:to-accent-purple/90 text-white rounded-xl px-10 py-7 text-lg font-bold shadow-neon-lg hover:shadow-neon hover:scale-105 transition-all"
               >
                 Start Chatting Now
