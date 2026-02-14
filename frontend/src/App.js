@@ -12,7 +12,6 @@ function App() {
   const [token, setToken] = useState(null);
 
   useEffect(() => {
-    // Check for stored auth
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
     if (storedToken && storedUser) {
@@ -48,6 +47,12 @@ function App() {
           />
           <Route 
             path="/characters" 
+            element={
+              user ? <CharactersPage user={user} onLogout={handleLogout} /> : <Navigate to="/auth" />
+            } 
+          />
+          <Route 
+            path="/characters/:category" 
             element={
               user ? <CharactersPage user={user} onLogout={handleLogout} /> : <Navigate to="/auth" />
             } 
