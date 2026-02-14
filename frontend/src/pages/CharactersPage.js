@@ -252,7 +252,7 @@ export default function CharactersPage({ user, onLogout }) {
                   variant="ghost"
                   className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl"
                 >
-                  <X className="w-4 h-4 mr-2" />
+                  <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </Button>
               </div>
