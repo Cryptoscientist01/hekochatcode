@@ -144,7 +144,7 @@ export default function ChatPage({ user, onLogout }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 glass-heavy">
+      <nav className="fixed top-0 w-full z-50 glass-heavy border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Button
