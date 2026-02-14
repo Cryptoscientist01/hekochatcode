@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Heart, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
@@ -12,7 +12,8 @@ const API = `${BACKEND_URL}/api`;
 
 export default function AuthPage({ onAuth }) {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation();
+  const [isLogin, setIsLogin] = useState(location.state?.mode !== 'signup');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
