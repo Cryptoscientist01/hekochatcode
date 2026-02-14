@@ -235,8 +235,8 @@ export default function CharactersPage({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* User Info at Bottom */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 glass-heavy">
+              {/* User Info at Bottom - Fixed */}
+              <div className="flex-shrink-0 p-4 border-t border-white/10 glass-heavy">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center">
                     <User className="w-5 h-5 text-white" />
