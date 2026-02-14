@@ -237,7 +237,7 @@ export default function CharactersPage({ user, onLogout }) {
 
               {/* User Info at Bottom */}
               <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 glass-heavy">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center">
                     <User className="w-5 h-5 text-white" />
                   </div>
@@ -246,6 +246,15 @@ export default function CharactersPage({ user, onLogout }) {
                     <p className="text-xs text-text-secondary truncate">{user.email}</p>
                   </div>
                 </div>
+                <Button
+                  data-testid="menu-logout"
+                  onClick={() => { onLogout(); setShowSideMenu(false); }}
+                  variant="ghost"
+                  className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
               </div>
             </motion.div>
           </>
