@@ -107,10 +107,10 @@ export default function CharactersPage({ user, onLogout }) {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -300, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 left-0 h-full w-72 glass-heavy border-r border-white/10 z-50 overflow-y-auto"
+              className="fixed top-0 left-0 h-full w-72 glass-heavy border-r border-white/10 z-50 flex flex-col"
             >
               {/* Menu Header */}
-              <div className="p-6 border-b border-white/10 flex items-center justify-between">
+              <div className="p-6 border-b border-white/10 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center">
                     <Heart className="w-6 h-6 text-white" fill="white" />
@@ -125,8 +125,8 @@ export default function CharactersPage({ user, onLogout }) {
                 </button>
               </div>
 
-              {/* Menu Items */}
-              <div className="p-4 space-y-2 pb-40">
+              {/* Menu Items - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 <button
                   data-testid="menu-home"
                   onClick={() => { navigate('/'); setShowSideMenu(false); }}
