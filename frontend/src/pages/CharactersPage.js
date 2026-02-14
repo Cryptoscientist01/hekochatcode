@@ -38,6 +38,9 @@ export default function CharactersPage({ user, onLogout }) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowChatsDropdown(false);
       }
+      if (sideMenuRef.current && !sideMenuRef.current.contains(event.target)) {
+        setShowSideMenu(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
