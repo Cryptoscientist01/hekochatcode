@@ -50,6 +50,17 @@ export default function AuthPage({ onAuth }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-gradient-to-b from-primary/10 via-background to-background">
+      {/* Back to Home Button */}
+      <Button
+        data-testid="back-to-home-btn"
+        onClick={() => navigate('/')}
+        variant="ghost"
+        className="fixed top-6 left-6 text-white hover:bg-white/10 rounded-xl gap-2"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        Back to Home
+      </Button>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
