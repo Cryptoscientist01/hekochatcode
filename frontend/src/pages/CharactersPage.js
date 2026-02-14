@@ -16,9 +16,11 @@ export default function CharactersPage({ user, onLogout }) {
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showChatsDropdown, setShowChatsDropdown] = useState(false);
+  const [showSideMenu, setShowSideMenu] = useState(false);
   const [myChats, setMyChats] = useState([]);
   const [loadingChats, setLoadingChats] = useState(false);
   const dropdownRef = useRef(null);
+  const sideMenuRef = useRef(null);
 
   useEffect(() => {
     if (urlCategory) {
