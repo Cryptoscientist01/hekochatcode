@@ -126,7 +126,7 @@ export default function CharactersPage({ user, onLogout }) {
               </div>
 
               {/* Menu Items */}
-              <div className="p-4 space-y-2">
+              <div className="p-4 space-y-2 pb-40">
                 <button
                   data-testid="menu-home"
                   onClick={() => { navigate('/'); setShowSideMenu(false); }}
