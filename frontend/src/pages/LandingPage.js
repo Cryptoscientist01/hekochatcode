@@ -255,10 +255,10 @@ export default function LandingPage({ user, onLogout }) {
           <div className="text-center">
             <Button
               data-testid="view-all-btn"
-              onClick={() => navigate(user ? '/characters' : '/auth')}
+              onClick={() => navigate(user ? `/characters/${selectedCategory}` : '/auth')}
               className="bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-8 py-6 text-base font-semibold"
             >
-              View All 25+ Characters
+              View All {selectedCategory} Characters
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
