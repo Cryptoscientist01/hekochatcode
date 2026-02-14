@@ -90,10 +90,181 @@ export default function CharactersPage({ user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="fixed top-0 w-full z-50 glass-heavy border-b border-white/5">
+      {/* Side Menu Overlay */}
+      <AnimatePresence>
+        {showSideMenu && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-50"
+              onClick={() => setShowSideMenu(false)}
+            />
+            <motion.div
+              ref={sideMenuRef}
+              initial={{ x: -300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -300, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed top-0 left-0 h-full w-72 glass-heavy border-r border-white/10 z-50 overflow-y-auto"
+            >
+              {/* Menu Header */}
+              <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center">
+                    <Heart className="w-6 h-6 text-white" fill="white" />
+                  </div>
+                  <span className="text-xl font-heading font-bold">AI Companion</span>
+                </div>
+                <button
+                  onClick={() => setShowSideMenu(false)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Menu Items */}
+              <div className="p-4 space-y-2">
+                <button
+                  data-testid="menu-home"
+                  onClick={() => { navigate('/'); setShowSideMenu(false); }}
+                  className="w-full flex items-center gap-4 px-4 py-4 rounded-xl hover:bg-white/10 transition-all text-left group"
+                >
+                  <Home className="w-5 h-5 text-white group-hover:text-primary transition-colors" />
+                  <span className="font-medium">Home</span>
+                </button>
+
+                <button
+                  data-testid="menu-discover"
+                  onClick={() => { navigate('/characters'); setShowSideMenu(false); }}
+                  className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-white/5 border border-white/10 text-left group"
+                >
+                  <Compass className="w-5 h-5 text-primary" />
+                  <span className="font-medium text-primary">Discover</span>
+                </button>
+
+                <button
+                  data-testid="menu-chat"
+                  onClick={() => { handleToggleChatsDropdown(); }}
+                  className="w-full flex items-center gap-4 px-4 py-4 rounded-xl hover:bg-white/10 transition-all text-left group"
+                >
+                  <MessageCircle className="w-5 h-5 text-white group-hover:text-primary transition-colors" />
+                  <span className="font-medium">Chat</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${showChatsDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Chat submenu */}
+                <AnimatePresence>
+                  {showChatsDropdown && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden ml-4"
+                    >
+                      {loadingChats ? (
+                        <div className="p-4 text-center text-text-secondary">
+                          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        </div>
+                      ) : myChats.length === 0 ? (
+                        <div className="p-4 text-sm text-text-secondary">No conversations yet</div>
+                      ) : (
+                        myChats.slice(0, 5).map((chat) => (
+                          <button
+                            key={chat.character_id}
+                            onClick={() => { navigate(`/chat/${chat.character_id}`); setShowSideMenu(false); }}
+                            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors"
+                          >
+                            <img src={chat.character_avatar} alt={chat.character_name} className="w-8 h-8 rounded-full object-cover" />
+                            <span className="text-sm truncate">{chat.character_name}</span>
+                          </button>
+                        ))
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <button
+                  data-testid="menu-collection"
+                  onClick={() => { toast.info("Collection feature coming soon!"); }}
+                  className="w-full flex items-center gap-4 px-4 py-4 rounded-xl hover:bg-white/10 transition-all text-left group"
+                >
+                  <FolderHeart className="w-5 h-5 text-white group-hover:text-primary transition-colors" />
+                  <span className="font-medium">Collection</span>
+                </button>
+
+                <button
+                  data-testid="menu-generate-image"
+                  onClick={() => { toast.info("Generate Image feature coming soon!"); }}
+                  className="w-full flex items-center gap-4 px-4 py-4 rounded-xl hover:bg-white/10 transition-all text-left group"
+                >
+                  <ImageIcon className="w-5 h-5 text-white group-hover:text-primary transition-colors" />
+                  <span className="font-medium">Generate Image</span>
+                </button>
+
+                <button
+                  data-testid="menu-create-character"
+                  onClick={() => { toast.info("Create Character feature coming soon!"); }}
+                  className="w-full flex items-center gap-4 px-4 py-4 rounded-xl hover:bg-white/10 transition-all text-left group"
+                >
+                  <Wand2 className="w-5 h-5 text-white group-hover:text-primary transition-colors" />
+                  <span className="font-medium">Create Character</span>
+                </button>
+
+                <button
+                  data-testid="menu-my-ai"
+                  onClick={() => { toast.info("My AI feature coming soon!"); }}
+                  className="w-full flex items-center gap-4 px-4 py-4 rounded-xl hover:bg-white/10 transition-all text-left group"
+                >
+                  <HeartHandshake className="w-5 h-5 text-white group-hover:text-primary transition-colors" />
+                  <span className="font-medium">My AI</span>
+                </button>
+
+                <div className="pt-4 border-t border-white/10 mt-4">
+                  <button
+                    data-testid="menu-premium"
+                    onClick={() => { toast.info("Premium features coming soon!"); }}
+                    className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 hover:from-amber-500/30 hover:to-orange-500/30 transition-all text-left group"
+                  >
+                    <Crown className="w-5 h-5 text-amber-400" />
+                    <span className="font-medium text-amber-400">Premium</span>
+                    <span className="ml-auto px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full">70% OFF</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* User Info at Bottom */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 glass-heavy">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{user.username || user.name || user.email}</p>
+                    <p className="text-xs text-text-secondary truncate">{user.email}</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <nav className="fixed top-0 w-full z-40 glass-heavy border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
+              {/* Hamburger Menu Button */}
+              <button
+                data-testid="hamburger-menu-btn"
+                onClick={() => setShowSideMenu(true)}
+                className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+
               <button 
                 onClick={() => navigate('/')}
                 className="flex items-center gap-3 hover:opacity-80 transition-opacity group"
@@ -101,82 +272,12 @@ export default function CharactersPage({ user, onLogout }) {
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center group-hover:scale-105 transition-transform">
                   <Heart className="w-6 h-6 text-white" fill="white" />
                 </div>
-                <span className="text-xl font-heading font-bold">AI Companion</span>
+                <span className="text-xl font-heading font-bold hidden sm:block">AI Companion</span>
               </button>
-
-              {/* My Chats Dropdown */}
-              <div className="relative" ref={dropdownRef}>
-                <Button
-                  data-testid="my-chats-btn"
-                  onClick={handleToggleChatsDropdown}
-                  variant="ghost"
-                  className="flex items-center gap-2 text-text-secondary hover:text-white hover:bg-white/5 rounded-xl px-4 py-2"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span className="font-medium">My Chats</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${showChatsDropdown ? 'rotate-180' : ''}`} />
-                </Button>
-
-                <AnimatePresence>
-                  {showChatsDropdown && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute top-full left-0 mt-2 w-80 rounded-xl glass-heavy border border-white/10 shadow-xl overflow-hidden"
-                    >
-                      <div className="p-3 border-b border-white/10">
-                        <h3 className="font-heading font-semibold text-sm text-white">Recent Conversations</h3>
-                      </div>
-                      
-                      <div className="max-h-80 overflow-y-auto">
-                        {loadingChats ? (
-                          <div className="p-6 text-center text-text-secondary">
-                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                            <p className="text-sm">Loading chats...</p>
-                          </div>
-                        ) : myChats.length === 0 ? (
-                          <div className="p-6 text-center text-text-secondary">
-                            <MessageCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">No conversations yet</p>
-                            <p className="text-xs mt-1">Start chatting with a character!</p>
-                          </div>
-                        ) : (
-                          myChats.map((chat) => (
-                            <button
-                              key={chat.character_id}
-                              data-testid={`chat-item-${chat.character_id}`}
-                              onClick={() => {
-                                navigate(`/chat/${chat.character_id}`);
-                                setShowChatsDropdown(false);
-                              }}
-                              className="w-full p-3 flex items-center gap-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0"
-                            >
-                              <img
-                                src={chat.character_avatar}
-                                alt={chat.character_name}
-                                className="w-10 h-10 rounded-full object-cover border border-white/10"
-                              />
-                              <div className="flex-1 text-left min-w-0">
-                                <p className="font-medium text-sm text-white truncate">{chat.character_name}</p>
-                                <p className="text-xs text-text-secondary truncate">{chat.last_message}</p>
-                              </div>
-                              <div className="flex items-center gap-1 text-text-muted">
-                                <Clock className="w-3 h-3" />
-                                <span className="text-xs">{chat.message_count}</span>
-                              </div>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl glass-light">
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl glass-light">
                 <User className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium text-text-secondary">{user.username || user.name || user.email}</span>
               </div>
