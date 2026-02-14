@@ -96,7 +96,7 @@ export default function LandingPage({ user, onLogout }) {
                   </Button>
                   <Button
                     data-testid="get-started-btn"
-                    onClick={() => navigate('/auth')}
+                    onClick={() => navigate('/auth', { state: { mode: 'signup' } })}
                     className="bg-gradient-to-r from-primary to-accent-purple hover:from-primary/90 hover:to-accent-purple/90 text-white rounded-xl px-6 py-2.5 font-bold shadow-neon"
                   >
                     Get Started
