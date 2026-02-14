@@ -388,7 +388,7 @@ export default function LandingPage({ user, onLogout }) {
               </p>
               <Button
                 data-testid="footer-cta-btn"
-                onClick={() => navigate('/auth')}
+                onClick={() => navigate('/auth', { state: { mode: 'signup' } })}
                 className="bg-gradient-to-r from-primary to-accent-purple hover:from-primary/90 hover:to-accent-purple/90 text-white rounded-xl px-12 py-7 text-lg font-bold shadow-neon-lg hover:scale-105 transition-all"
               >
                 Get Started Free
