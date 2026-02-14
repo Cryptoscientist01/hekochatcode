@@ -114,50 +114,44 @@ export default function AuthPage({ onAuth }) {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <Input
-                data-testid="email-input"
-                type="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-4 text-white placeholder:text-white/30"
-                required
-              />
-            </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <Input
+              data-testid="email-input"
+              type="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-4 text-white placeholder:text-white/30"
+              required
+            />
 
             {!isLogin && (
-              <div>
-                <Input
-                  data-testid="username-input"
-                  type="text"
-                  placeholder="Username"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-4 text-white placeholder:text-white/30"
-                  required
-                />
-              </div>
-            )}
-
-            <div>
               <Input
-                data-testid="password-input"
-                type="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                data-testid="username-input"
+                type="text"
+                placeholder="Username"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-4 text-white placeholder:text-white/30"
                 required
               />
-            </div>
+            )}
+
+            <Input
+              data-testid="password-input"
+              type="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-4 text-white placeholder:text-white/30"
+              required
+            />
 
             <Button
               data-testid="submit-btn"
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90 text-white rounded-full py-6 font-bold shadow-neon mt-2"
+              className="w-full bg-primary hover:bg-primary/90 text-white rounded-full py-6 font-bold shadow-neon"
             >
               {loading ? "Loading..." : (isLogin ? "Sign In" : "Create Account")}
             </Button>
