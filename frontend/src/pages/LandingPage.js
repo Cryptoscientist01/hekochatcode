@@ -183,16 +183,34 @@ export default function LandingPage({ user, onLogout }) {
             <h2 className="text-4xl md:text-5xl font-heading font-bold mb-4">
               Meet Your Next <span className="text-primary">Connection</span>
             </h2>
-            <p className="text-text-secondary text-lg max-w-2xl mx-auto">
+            <p className="text-text-secondary text-lg max-w-2xl mx-auto mb-8">
               Choose from diverse AI personalities, each with unique traits and conversation styles
             </p>
+
+            {/* Category Buttons */}
+            <div className="flex items-center justify-center gap-3">
+              {["Girls", "Anime", "Guys"].map((category) => (
+                <button
+                  key={category}
+                  data-testid={`home-category-${category.toLowerCase()}`}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-8 py-3 rounded-xl font-semibold transition-all ${
+                    selectedCategory === category
+                      ? "bg-gradient-to-r from-primary to-accent-purple text-white shadow-neon"
+                      : "glass-light text-text-secondary hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
           </motion.div>
 
           <motion.div
+            key={selectedCategory}
             initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
             className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6 mb-12"
           >
             {featuredCharacters.map((character, index) => (
