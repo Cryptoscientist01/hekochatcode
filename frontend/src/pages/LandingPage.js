@@ -11,16 +11,16 @@ const API = `${BACKEND_URL}/api`;
 export default function LandingPage({ user, onLogout }) {
   const navigate = useNavigate();
   const [featuredCharacters, setFeaturedCharacters] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("Girls");
 
   useEffect(() => {
     fetchFeaturedCharacters();
-  }, []);
+  }, [selectedCategory]);
 
   const fetchFeaturedCharacters = async () => {
     try {
-      const response = await axios.get(`${API}/characters`);
-      const shuffled = response.data.sort(() => 0.5 - Math.random());
-      setFeaturedCharacters(shuffled.slice(0, 8));
+      const response = await axios.get(`${API}/characters?category=${selectedCategory}`);
+      setFeaturedCharacters(response.data);
     } catch (error) {
       console.error("Failed to fetch characters", error);
     }
