@@ -114,7 +114,7 @@ export default function AuthPage({ onAuth }) {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <Input
                 data-testid="email-input"
