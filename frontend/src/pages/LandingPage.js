@@ -224,20 +224,21 @@ export default function LandingPage({ user, onLogout }) {
                 onClick={() => user ? navigate(`/chat/${character.id}`) : navigate('/auth', { state: { mode: 'signup' } })}
                 className="relative overflow-hidden rounded-2xl cursor-pointer group shadow-card hover:shadow-card-hover transition-all duration-300"
               >
-                <div className="aspect-[3/4] relative">
-                  <img
+                <div className="aspect-[3/4] relative overflow-hidden">
+                  <motion.img
                     src={character.avatar_url}
                     alt={character.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-full object-cover"
+                    whileHover={{ 
+                      scale: 1.1,
+                      rotate: [0, -2, 2, -2, 0],
+                      transition: { 
+                        rotate: { repeat: Infinity, duration: 0.5, ease: "easeInOut" },
+                        scale: { duration: 0.3 }
+                      }
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                  
-                  {/* Smile animation on hover */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/90 to-accent-purple/90 flex items-center justify-center backdrop-blur-sm shadow-neon animate-bounce">
-                      <Smile className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
                   
                   <div className="absolute top-3 right-3">
                     <div className="px-3 py-1.5 rounded-full glass-heavy text-xs font-semibold">
