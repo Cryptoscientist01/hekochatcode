@@ -632,6 +632,41 @@ async def get_chat_history(character_id: str, user_id: str):
     messages = await db.messages.find({"chat_id": chat_id}, {"_id": 0}).sort("timestamp", 1).to_list(1000)
     return {"messages": messages}
 
+@api_router.get("/chat/my-chats")
+async def get_user_chats(user_id: str):
+    """Get all characters the user has chatted with"""
+    # Get unique chat_ids for this user
+    pipeline = [
+        {"$match": {"chat_id": {"$regex": f"^{user_id}_"}}},
+        {"$group": {
+            "_id": "$chat_id",
+            "last_message": {"$last": "$content"},
+            "last_timestamp": {"$last": "$timestamp"},
+            "message_count": {"$sum": 1}
+        }},
+        {"$sort": {"last_timestamp": -1}},
+        {"$limit": 20}
+    ]
+    
+    chat_summaries = await db.messages.aggregate(pipeline).to_list(20)
+    
+    # Get character details for each chat
+    result = []
+    for chat in chat_summaries:
+        character_id = chat["_id"].replace(f"{user_id}_", "")
+        character = await db.characters.find_one({"id": character_id}, {"_id": 0})
+        if character:
+            result.append({
+                "character_id": character_id,
+                "character_name": character["name"],
+                "character_avatar": character["avatar_url"],
+                "last_message": chat["last_message"][:50] + "..." if len(chat["last_message"]) > 50 else chat["last_message"],
+                "last_timestamp": chat["last_timestamp"],
+                "message_count": chat["message_count"]
+            })
+    
+    return {"chats": result}
+
 # Voice Routes
 @api_router.post("/voice/generate")
 async def generate_voice(request: VoiceGenerateRequest):
