@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;700&family=Outfit:wght@300;400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -19,23 +19,69 @@
 
 @layer utilities {
   .glass-heavy {
-    @apply backdrop-blur-xl bg-black/60 border border-white/10;
+    @apply backdrop-blur-2xl bg-black/40 border border-white/5;
   }
   
   .glass-light {
-    @apply backdrop-blur-md bg-white/5 border border-white/10;
+    @apply backdrop-blur-xl bg-white/5 border border-white/10;
   }
   
   .neon-glow {
-    box-shadow: 0 0 20px rgba(255, 0, 128, 0.5);
+    box-shadow: 0 0 25px rgba(255, 0, 128, 0.4);
   }
   
   .neon-border {
-    @apply border border-primary/50;
-    box-shadow: 0 0 15px rgba(255, 0, 128, 0.3);
+    @apply border border-primary/40;
+    box-shadow: 0 0 20px rgba(255, 0, 128, 0.25);
+  }
+  
+  .gradient-mesh {
+    background: 
+      radial-gradient(at 0% 0%, rgba(255, 0, 128, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(157, 78, 221, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(0, 217, 255, 0.15) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(255, 0, 128, 0.15) 0px, transparent 50%);
   }
 }
 
 :root {
   --radius: 1rem;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #12121A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #FF0080 0%, #9D4EDD 100%);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #E6006F 0%, #8B3FC7 100%);
+}
+
+/* Smooth animations */
+* {
+  scroll-behavior: smooth;
+}
+
+/* Focus states */
+button:focus-visible, 
+input:focus-visible, 
+textarea:focus-visible {
+  outline: 2px solid #FF0080;
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: rgba(255, 0, 128, 0.3);
+  color: #FFFFFF;
 }

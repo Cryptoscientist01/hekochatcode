@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, Sparkles, ArrowRight } from "lucide-react";
+import { Heart, MessageCircle, Sparkles, ArrowRight, Zap, Image as ImageIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -19,9 +19,8 @@ export default function LandingPage({ user, onLogout }) {
   const fetchFeaturedCharacters = async () => {
     try {
       const response = await axios.get(`${API}/characters`);
-      // Get 6 random featured characters
       const shuffled = response.data.sort(() => 0.5 - Math.random());
-      setFeaturedCharacters(shuffled.slice(0, 6));
+      setFeaturedCharacters(shuffled.slice(0, 8));
     } catch (error) {
       console.error("Failed to fetch characters", error);
     }
@@ -29,36 +28,38 @@ export default function LandingPage({ user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Fixed Navigation */}
+      {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 glass-heavy border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 py-3">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <button 
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity group"
             >
-              <Heart className="w-7 h-7 text-primary" fill="#FF0080" />
-              <span className="text-xl font-heading font-bold text-white">Candy AI</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Heart className="w-6 h-6 text-white" fill="white" />
+              </div>
+              <span className="text-xl font-heading font-bold text-white">AI Companion</span>
             </button>
             
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-8">
               {!user && (
-                <div className="hidden md:flex items-center gap-6 text-sm">
+                <div className="hidden md:flex items-center gap-8">
                   <button
                     onClick={() => navigate('/characters/Girls')}
-                    className="text-text-secondary hover:text-white transition-colors"
+                    className="text-text-secondary hover:text-white transition-colors font-medium"
                   >
                     Girls
                   </button>
                   <button
                     onClick={() => navigate('/characters/Anime')}
-                    className="text-text-secondary hover:text-white transition-colors"
+                    className="text-text-secondary hover:text-white transition-colors font-medium"
                   >
                     Anime
                   </button>
                   <button
                     onClick={() => navigate('/characters/Guys')}
-                    className="text-text-secondary hover:text-white transition-colors"
+                    className="text-text-secondary hover:text-white transition-colors font-medium"
                   >
                     Guys
                   </button>
@@ -70,7 +71,7 @@ export default function LandingPage({ user, onLogout }) {
                   <Button
                     data-testid="dashboard-btn"
                     onClick={() => navigate('/characters')}
-                    className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-2 font-semibold"
+                    className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-white rounded-xl px-6 py-2.5 font-semibold shadow-lg"
                   >
                     Characters
                   </Button>
@@ -78,7 +79,7 @@ export default function LandingPage({ user, onLogout }) {
                     data-testid="logout-btn"
                     onClick={onLogout}
                     variant="ghost"
-                    className="text-text-secondary hover:text-white hover:bg-white/10 rounded-full"
+                    className="text-text-secondary hover:text-white hover:bg-white/5 rounded-xl"
                   >
                     Logout
                   </Button>
@@ -89,14 +90,14 @@ export default function LandingPage({ user, onLogout }) {
                     data-testid="login-btn"
                     onClick={() => navigate('/auth')}
                     variant="ghost"
-                    className="text-white hover:bg-white/10 rounded-full px-6"
+                    className="text-white hover:bg-white/5 rounded-xl px-5"
                   >
-                    Login
+                    Sign In
                   </Button>
                   <Button
                     data-testid="get-started-btn"
                     onClick={() => navigate('/auth')}
-                    className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-2 font-bold shadow-neon"
+                    className="bg-gradient-to-r from-primary to-accent-purple hover:from-primary/90 hover:to-accent-purple/90 text-white rounded-xl px-6 py-2.5 font-bold shadow-neon"
                   >
                     Get Started
                   </Button>
@@ -108,49 +109,82 @@ export default function LandingPage({ user, onLogout }) {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6">
-        <div className="max-w-6xl mx-auto text-center">
+      <section className="relative pt-32 pb-24 px-6 overflow-hidden">
+        <div className="absolute inset-0 gradient-mesh opacity-60"></div>
+        
+        <div className="relative max-w-6xl mx-auto text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.8 }}
           >
-            <h1 className="text-5xl md:text-7xl font-heading font-extrabold tracking-tight mb-6">
-              Your Perfect
-              <span className="bg-gradient-to-r from-primary to-accent-purple bg-clip-text text-transparent"> AI Companion </span>
-              Awaits
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-light mb-8">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-text-secondary">Powered by Advanced AI Technology</span>
+            </div>
+            
+            <h1 className="text-6xl md:text-7xl lg:text-8xl font-heading font-extrabold tracking-tight mb-6 leading-tight">
+              Connect with Your
+              <span className="block bg-gradient-to-r from-primary via-accent-purple to-secondary bg-clip-text text-transparent mt-2">
+                Perfect AI Companion
+              </span>
             </h1>
             
-            <p className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed">
-              Experience meaningful connections with AI companions. Chat, share moments, and create memories with personalized characters who understand you.
+            <p className="text-xl md:text-2xl text-text-secondary max-w-3xl mx-auto mb-12 leading-relaxed font-light">
+              Experience meaningful conversations with AI personalities designed to understand, engage, and grow with you.
             </p>
             
-            <Button
-              data-testid="hero-cta-btn"
-              onClick={() => navigate('/auth')}
-              className="bg-primary hover:bg-primary/90 text-white rounded-full px-10 py-7 text-lg font-bold shadow-neon-lg hover:scale-105 transition-all"
-            >
-              Start Your Journey
-              <Sparkles className="ml-2 w-5 h-5" />
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button
+                data-testid="hero-cta-btn"
+                onClick={() => navigate('/auth')}
+                className="bg-gradient-to-r from-primary to-accent-purple hover:from-primary/90 hover:to-accent-purple/90 text-white rounded-xl px-10 py-7 text-lg font-bold shadow-neon-lg hover:shadow-neon hover:scale-105 transition-all"
+              >
+                Start Chatting Now
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+              <Button
+                onClick={() => navigate('/characters')}
+                variant="outline"
+                className="border-white/10 text-white hover:bg-white/5 rounded-xl px-10 py-7 text-lg font-semibold"
+              >
+                Explore Characters
+              </Button>
+            </div>
+            
+            <div className="mt-16 flex items-center justify-center gap-12 text-text-secondary">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-1">25+</div>
+                <div className="text-sm">AI Characters</div>
+              </div>
+              <div className="w-px h-12 bg-white/10"></div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-1">24/7</div>
+                <div className="text-sm">Always Available</div>
+              </div>
+              <div className="w-px h-12 bg-white/10"></div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-1">100%</div>
+                <div className="text-sm">Private & Secure</div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>
 
       {/* Featured Characters */}
-      <section className="py-16 px-6">
+      <section className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-5xl font-heading font-bold mb-4">
-              Meet Our <span className="text-primary">Characters</span>
+            className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-heading font-bold mb-4">
+              Meet Your Next <span className="text-primary">Connection</span>
             </h2>
-            <p className="text-text-secondary text-lg">
-              Choose from diverse personalities and start chatting instantly
+            <p className="text-text-secondary text-lg max-w-2xl mx-auto">
+              Choose from diverse AI personalities, each with unique traits and conversation styles
             </p>
           </motion.div>
 
@@ -159,7 +193,7 @@ export default function LandingPage({ user, onLogout }) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8"
+            className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6 mb-12"
           >
             {featuredCharacters.map((character, index) => (
               <motion.div
@@ -169,24 +203,33 @@ export default function LandingPage({ user, onLogout }) {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.05 }}
                 onClick={() => user ? navigate(`/chat/${character.id}`) : navigate('/auth')}
-                className="relative overflow-hidden rounded-xl cursor-pointer group"
+                className="relative overflow-hidden rounded-2xl cursor-pointer group shadow-card hover:shadow-card-hover transition-all duration-300"
               >
                 <div className="aspect-[3/4] relative">
                   <img
                     src={character.avatar_url}
                     alt={character.name}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                  
+                  <div className="absolute top-3 right-3">
+                    <div className="px-3 py-1.5 rounded-full glass-heavy text-xs font-semibold">
+                      {character.category}
+                    </div>
+                  </div>
                 </div>
                 
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <h3 className="text-base font-heading font-bold text-white">{character.name}</h3>
-                  <p className="text-xs text-text-secondary">{character.age} • {character.category}</p>
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <h3 className="text-lg font-heading font-bold text-white mb-1">{character.name}</h3>
+                  <p className="text-xs text-text-secondary mb-2">{character.age} • {character.occupation || 'Available'}</p>
+                  <p className="text-sm text-text-secondary line-clamp-2">
+                    {character.description}
+                  </p>
                 </div>
 
-                <div className="absolute inset-0 border-2 border-primary opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" 
-                     style={{ boxShadow: '0 0 20px rgba(255, 0, 128, 0.3)' }} />
+                <div className="absolute inset-0 border-2 border-primary opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" 
+                     style={{ boxShadow: '0 0 30px rgba(255, 0, 128, 0.4)' }} />
               </motion.div>
             ))}
           </motion.div>
@@ -195,89 +238,110 @@ export default function LandingPage({ user, onLogout }) {
             <Button
               data-testid="view-all-btn"
               onClick={() => navigate(user ? '/characters' : '/auth')}
-              variant="outline"
-              className="border-primary/30 text-primary hover:bg-primary/10 rounded-full px-8 py-6 text-base font-semibold"
+              className="bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-8 py-6 text-base font-semibold"
             >
-              View All Characters
-              <ArrowRight className="ml-2 w-4 h-4" />
+              View All 25+ Characters
+              <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section className="py-20 px-6 bg-gradient-to-b from-background to-background-paper">
-        <div className="max-w-6xl mx-auto">
+      <section className="py-24 px-6 bg-gradient-to-b from-background via-background-paper to-background">
+        <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+            className="text-center mb-16"
           >
-            <div className="glass-heavy rounded-2xl p-8 text-center hover:scale-105 transition-transform">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                <MessageCircle className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-heading font-semibold mb-3">Deep Conversations</h3>
-              <p className="text-text-secondary">AI-powered chats that feel real and meaningful with Gemini 3 Flash</p>
-            </div>
-            
-            <div className="glass-heavy rounded-2xl p-8 text-center hover:scale-105 transition-transform">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary/10 flex items-center justify-center">
-                <svg className="w-8 h-8 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-heading font-semibold mb-3">Voice Messages</h3>
-              <p className="text-text-secondary">Hear their voice with realistic OpenAI text-to-speech</p>
-            </div>
-            
-            <div className="glass-heavy rounded-2xl p-8 text-center hover:scale-105 transition-transform">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent-purple/10 flex items-center justify-center">
-                <svg className="w-8 h-8 text-accent-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-heading font-semibold mb-3">AI-Generated Images</h3>
-              <p className="text-text-secondary">Request custom images using Gemini Nano Banana</p>
-            </div>
+            <h2 className="text-4xl md:text-5xl font-heading font-bold mb-4">
+              Everything You Need for <span className="text-primary">Meaningful Connections</span>
+            </h2>
           </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="glass-light rounded-2xl p-8 hover:bg-white/[0.07] transition-all duration-300 group"
+            >
+              <div className="w-14 h-14 mb-6 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <MessageCircle className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="text-xl font-heading font-bold mb-3">Natural Conversations</h3>
+              <p className="text-text-secondary leading-relaxed">Experience AI-powered chats that feel genuine and meaningful, powered by Gemini 3 Flash technology.</p>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="glass-light rounded-2xl p-8 hover:bg-white/[0.07] transition-all duration-300 group"
+            >
+              <div className="w-14 h-14 mb-6 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Zap className="w-7 h-7 text-secondary" />
+              </div>
+              <h3 className="text-xl font-heading font-bold mb-3">Voice Messages</h3>
+              <p className="text-text-secondary leading-relaxed">Hear their voice with realistic text-to-speech powered by OpenAI's advanced TTS technology.</p>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="glass-light rounded-2xl p-8 hover:bg-white/[0.07] transition-all duration-300 group"
+            >
+              <div className="w-14 h-14 mb-6 rounded-xl bg-gradient-to-br from-accent-purple/20 to-accent-purple/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <ImageIcon className="w-7 h-7 text-accent-purple" />
+              </div>
+              <h3 className="text-xl font-heading font-bold mb-3">AI-Generated Images</h3>
+              <p className="text-text-secondary leading-relaxed">Request custom images of your companion using Gemini Nano Banana image generation.</p>
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Categories Preview */}
-      <section className="py-20 px-6">
+      {/* Categories */}
+      <section className="py-24 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="text-center mb-12"
+            className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-5xl font-heading font-bold mb-4">
+            <h2 className="text-4xl md:text-5xl font-heading font-bold mb-4">
               Explore by <span className="text-primary">Category</span>
             </h2>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { name: "Girls", count: "10+", color: "primary", emoji: "👩" },
-              { name: "Anime", count: "8+", color: "secondary", emoji: "🎌" },
-              { name: "Guys", count: "7+", color: "accent-purple", emoji: "👨" }
-            ].map((category) => (
+              { name: "Girls", count: "10", gradient: "from-primary to-primary/60" },
+              { name: "Anime", count: "8", gradient: "from-secondary to-secondary/60" },
+              { name: "Guys", count: "7", gradient: "from-accent-purple to-accent-purple/60" }
+            ].map((category, index) => (
               <motion.button
                 key={category.name}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
                 onClick={() => navigate(user ? `/characters/${category.name}` : '/auth')}
-                className="glass-heavy rounded-2xl p-8 hover:scale-105 transition-all group"
+                className="glass-light rounded-2xl p-10 hover:bg-white/[0.07] transition-all duration-300 group text-left"
               >
-                <div className="text-5xl mb-4">{category.emoji}</div>
-                <h3 className="text-2xl font-heading font-bold mb-2">{category.name}</h3>
-                <p className="text-text-secondary mb-4">{category.count} characters available</p>
-                <div className="text-primary group-hover:translate-x-2 transition-transform inline-flex items-center gap-2">
-                  Explore <ArrowRight className="w-4 h-4" />
+                <div className={`w-16 h-16 mb-6 rounded-xl bg-gradient-to-br ${category.gradient} opacity-20 group-hover:opacity-30 transition-opacity`}></div>
+                <h3 className="text-3xl font-heading font-bold mb-2">{category.name}</h3>
+                <p className="text-text-secondary mb-6">{category.count}+ unique characters</p>
+                <div className="flex items-center gap-2 text-primary group-hover:gap-3 transition-all">
+                  <span className="font-semibold">Explore</span>
+                  <ArrowRight className="w-5 h-5" />
                 </div>
               </motion.button>
             ))}
@@ -286,34 +350,31 @@ export default function LandingPage({ user, onLogout }) {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 px-6">
-        <div className="max-w-4xl mx-auto">
+      <section className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="glass-heavy rounded-2xl p-12 text-center"
+            className="relative overflow-hidden rounded-3xl p-12 md:p-16 text-center"
           >
-            <h2 className="text-3xl md:text-5xl font-heading font-bold mb-6">
-              Ready to Meet Your Perfect Match?
-            </h2>
-            <p className="text-lg text-text-secondary mb-8 max-w-2xl mx-auto">
-              Join thousands experiencing meaningful AI companionship. Start chatting in seconds.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent-purple/20 to-secondary/20"></div>
+            <div className="absolute inset-0 glass-heavy"></div>
+            
+            <div className="relative">
+              <h2 className="text-4xl md:text-5xl font-heading font-bold mb-6">
+                Start Your Journey Today
+              </h2>
+              <p className="text-xl text-text-secondary mb-10 max-w-2xl mx-auto">
+                Join thousands experiencing meaningful AI companionship. No credit card required.
+              </p>
               <Button
                 data-testid="footer-cta-btn"
                 onClick={() => navigate('/auth')}
-                className="bg-primary hover:bg-primary/90 text-white rounded-full px-10 py-7 text-lg font-bold shadow-neon-lg"
+                className="bg-gradient-to-r from-primary to-accent-purple hover:from-primary/90 hover:to-accent-purple/90 text-white rounded-xl px-12 py-7 text-lg font-bold shadow-neon-lg hover:scale-105 transition-all"
               >
                 Get Started Free
-              </Button>
-              <Button
-                onClick={() => navigate(user ? '/characters' : '/auth')}
-                variant="outline"
-                className="border-white/20 text-white hover:bg-white/10 rounded-full px-10 py-7 text-lg font-semibold"
-              >
-                Browse Characters
+                <Sparkles className="ml-2 w-5 h-5" />
               </Button>
             </div>
           </motion.div>
@@ -321,10 +382,21 @@ export default function LandingPage({ user, onLogout }) {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-8 px-6">
-        <div className="max-w-7xl mx-auto text-center text-text-secondary text-sm">
-          <p>© 2026 Candy AI. All Rights Reserved.</p>
-          <p className="mt-2">Experience meaningful connections with AI companions.</p>
+      <footer className="border-t border-white/5 py-12 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center">
+                <Heart className="w-6 h-6 text-white" fill="white" />
+              </div>
+              <span className="text-lg font-heading font-bold text-white">AI Companion</span>
+            </div>
+            
+            <div className="text-text-secondary text-sm text-center md:text-left">
+              <p>© 2026 AI Companion. All Rights Reserved.</p>
+              <p className="mt-1">Experience meaningful connections with advanced AI technology.</p>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
