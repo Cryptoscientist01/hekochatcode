@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, User, Sparkles, MessageCircle, ChevronDown, Clock } from "lucide-react";
+import { Heart, User, Sparkles, MessageCircle, ChevronDown, Clock, Menu, Home, Compass, Image as ImageIcon, Wand2, HeartHandshake, Crown, X, FolderHeart } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
