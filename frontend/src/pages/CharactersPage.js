@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, User, Sparkles } from "lucide-react";
+import { Heart, User, Sparkles, MessageCircle, ChevronDown, Clock } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
@@ -15,6 +15,10 @@ export default function CharactersPage({ user, onLogout }) {
   const [activeCategory, setActiveCategory] = useState(urlCategory || "Girls");
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showChatsDropdown, setShowChatsDropdown] = useState(false);
+  const [myChats, setMyChats] = useState([]);
+  const [loadingChats, setLoadingChats] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     if (urlCategory) {
@@ -26,6 +30,17 @@ export default function CharactersPage({ user, onLogout }) {
     fetchCharacters();
   }, [activeCategory]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowChatsDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const fetchCharacters = async () => {
     setLoading(true);
     try {
@@ -35,6 +50,27 @@ export default function CharactersPage({ user, onLogout }) {
       toast.error("Failed to load characters");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMyChats = async () => {
+    if (myChats.length > 0) return; // Already loaded
+    setLoadingChats(true);
+    try {
+      const response = await axios.get(`${API}/chat/my-chats?user_id=${user.id}`);
+      setMyChats(response.data.chats || []);
+    } catch (error) {
+      console.error("Failed to load chats", error);
+    } finally {
+      setLoadingChats(false);
+    }
+  };
+
+  const handleToggleChatsDropdown = () => {
+    const newState = !showChatsDropdown;
+    setShowChatsDropdown(newState);
+    if (newState) {
+      fetchMyChats();
     }
   };
 
