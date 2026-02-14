@@ -75,14 +75,6 @@ export default function LandingPage({ user, onLogout }) {
                   >
                     Characters
                   </Button>
-                  <Button
-                    data-testid="logout-btn"
-                    onClick={onLogout}
-                    variant="ghost"
-                    className="text-text-secondary hover:text-white hover:bg-white/5 rounded-xl"
-                  >
-                    Logout
-                  </Button>
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
