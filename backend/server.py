@@ -85,6 +85,9 @@ class ImageGenerateRequest(BaseModel):
     prompt: str
     character_id: str
 
+class GoogleSessionRequest(BaseModel):
+    session_id: str
+
 # Helper function to hash passwords
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
