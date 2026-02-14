@@ -9,47 +9,58 @@ export default function LandingPage({ user, onLogout }) {
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 glass-heavy">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      <nav className="fixed top-0 w-full z-50 glass-heavy border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-2"
           >
-            <Heart className="w-8 h-8 text-primary" fill="#FF0080" />
-            <span className="text-2xl font-heading font-bold text-white">Electric Candy</span>
+            <Heart className="w-7 h-7 text-primary" fill="#FF0080" />
+            <span className="text-xl font-heading font-bold text-white">Candy AI</span>
           </motion.div>
           
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-2"
           >
             {user ? (
-              <div className="flex items-center gap-4">
+              <>
                 <Button
                   data-testid="dashboard-btn"
                   onClick={() => navigate('/characters')}
-                  className="bg-primary hover:bg-primary/90 text-white rounded-full px-6"
+                  className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-2 font-semibold"
                 >
-                  Dashboard
+                  Characters
                 </Button>
                 <Button
                   data-testid="logout-btn"
                   onClick={onLogout}
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10 rounded-full px-6"
+                  variant="ghost"
+                  className="text-text-secondary hover:text-white hover:bg-white/10 rounded-full"
                 >
                   Logout
                 </Button>
-              </div>
+              </>
             ) : (
-              <Button
-                data-testid="get-started-btn"
-                onClick={() => navigate('/auth')}
-                className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-lg font-bold shadow-neon"
-              >
-                Get Started
-              </Button>
+              <>
+                <Button
+                  data-testid="login-btn"
+                  onClick={() => navigate('/auth')}
+                  variant="ghost"
+                  className="text-white hover:bg-white/10 rounded-full"
+                >
+                  Login
+                </Button>
+                <Button
+                  data-testid="get-started-btn"
+                  onClick={() => navigate('/auth')}
+                  className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-2 font-bold shadow-neon"
+                >
+                  Get Started
+                </Button>
+              </>
             )}
           </motion.div>
         </div>
