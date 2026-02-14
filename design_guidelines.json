@@ -1,0 +1,158 @@
+{
+  "identity": {
+    "name": "Electric Candy",
+    "theme_mode": "dark",
+    "vibe": "Playful, Flirty, Immersive, Neon-Noir",
+    "emotional_archetype": "Electric & Neon",
+    "description": "A vibrant, character-driven experience that fuses gaming aesthetics with intimate social apps. Deep dark backgrounds make the neon accents and character portraits pop."
+  },
+  "typography": {
+    "font_family_headings": "Outfit, sans-serif",
+    "font_family_body": "DM Sans, sans-serif",
+    "font_url": "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;700&family=Outfit:wght@300;400;600;800&display=swap",
+    "scale": {
+      "h1": "text-5xl md:text-7xl font-extrabold tracking-tight",
+      "h2": "text-3xl md:text-5xl font-bold tracking-tight",
+      "h3": "text-2xl md:text-3xl font-semibold",
+      "body": "text-base md:text-lg leading-relaxed",
+      "caption": "text-xs md:text-sm text-muted-foreground uppercase tracking-wider"
+    },
+    "rules": "Headings must use 'Outfit' with tight tracking. Body text uses 'DM Sans' for high readability. varying weights to create hierarchy."
+  },
+  "colors": {
+    "background": {
+      "default": "#050508",
+      "paper": "#0F0F16",
+      "subtle": "#1A1A24"
+    },
+    "primary": {
+      "main": "#FF0080",
+      "hover": "#D9006C",
+      "foreground": "#FFFFFF",
+      "glow": "0 0 20px rgba(255, 0, 128, 0.5)"
+    },
+    "secondary": {
+      "main": "#00FFCC",
+      "hover": "#00CCA3",
+      "foreground": "#000000"
+    },
+    "accent": {
+      "purple": "#7000FF",
+      "yellow": "#FFD600"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#9CA3AF",
+      "muted": "#6B7280"
+    },
+    "status": {
+      "online": "#22C55E",
+      "offline": "#6B7280",
+      "busy": "#EF4444"
+    },
+    "gradients": {
+      "primary": "bg-gradient-to-r from-[#FF0080] to-[#7000FF]",
+      "secondary": "bg-gradient-to-r from-[#00FFCC] to-[#00C2FF]",
+      "surface": "bg-gradient-to-b from-[#0F0F16] to-[#050508]"
+    }
+  },
+  "visual_enhancers": {
+    "borders": {
+      "subtle": "border border-white/10",
+      "active": "border border-primary/50",
+      "glow": "border border-primary/50 shadow-[0_0_15px_rgba(255,0,128,0.3)]"
+    },
+    "glassmorphism": {
+      "heavy": "backdrop-blur-xl bg-black/60 border border-white/10",
+      "light": "backdrop-blur-md bg-white/5 border border-white/10"
+    },
+    "shadows": {
+      "neon": "0 0 20px -5px var(--primary)",
+      "card": "0 10px 40px -10px rgba(0,0,0,0.5)"
+    },
+    "radius": {
+      "default": "rounded-2xl",
+      "pill": "rounded-full",
+      "sharp": "rounded-sm"
+    }
+  },
+  "layout_strategies": {
+    "landing_page": {
+      "hero": "Full viewport height (min-h-screen). Immersive background image/video with heavy gradient overlay. Centered or split layout. 'Call to Action' must be prominent and glowing.",
+      "grid": "Use 'Bento Grid' for features. Uneven spans (col-span-2 vs col-span-1) to create visual interest."
+    },
+    "character_selection": {
+      "style": "Tinder-like cards or Masonry Grid. Large imagery. Minimal text overlay. Focus on the 'Vibe' of the character.",
+      "filters": "Horizontal scrollable pill list for categories (e.g., 'Anime', 'Realistic', 'Funny')."
+    },
+    "chat_interface": {
+      "container": "Mobile-first width on desktop (max-w-md mx-auto) or split screen (List Left, Chat Right).",
+      "bubbles": "AI messages: Glassmorphism or Dark Grey. User messages: Primary Gradient. Rounded corners (rounded-2xl rounded-tr-sm for user, rounded-2xl rounded-tl-sm for AI)."
+    }
+  },
+  "component_rules": {
+    "buttons": {
+      "primary": "bg-primary text-white hover:bg-primary/90 shadow-lg hover:shadow-primary/25 transition-all duration-300 rounded-full font-bold uppercase tracking-wide px-8 py-3",
+      "secondary": "bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20 rounded-full font-semibold"
+    },
+    "inputs": {
+      "default": "bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-4 text-white placeholder:text-white/30"
+    },
+    "cards": {
+      "character": "relative overflow-hidden group cursor-pointer transition-transform hover:scale-[1.02]. Image covers 100%. Gradient overlay at bottom for text."
+    },
+    "toasts": {
+      "library": "sonner",
+      "style": "dark"
+    }
+  },
+  "image_urls": {
+    "realistic_females": [
+      {
+        "url": "https://images.unsplash.com/photo-1607332646791-929f9ddcf96a?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Casual friendly girl in striped shirt",
+        "category": "Casual"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1561450863-83d1391238bb?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Artistic woman with face paint",
+        "category": "Artistic"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1768017093006-6a67c794d512?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Cultural beauty in traditional dress",
+        "category": "Cultural"
+      }
+    ],
+    "anime_females": [
+      {
+        "url": "https://images.unsplash.com/photo-1576348076752-6085814e5a51?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Edgy anime style woman with makeup",
+        "category": "Edgy"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1629350260660-6053fe4fcf47?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Professional anime style woman",
+        "category": "Professional"
+      }
+    ],
+    "placeholders": {
+      "avatar_default": "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+      "hero_bg": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop"
+    }
+  },
+  "universal_guidelines": [
+    "Do NOT use simple linear gradients. Use radial or conic gradients for backgrounds to create depth.",
+    "Always add `data-testid` to interactive elements.",
+    "Use `framer-motion` for micro-interactions (hover lift, tap scale).",
+    "Ensure 3:1 contrast ratio for large text and 4.5:1 for small text. Use APCA where possible.",
+    "For shadows, use colored shadows (e.g. shadow-primary/20) instead of black shadows on dark backgrounds."
+  ],
+  "libraries": {
+    "icons": "lucide-react",
+    "animation": "framer-motion",
+    "components": "shadcn/ui",
+    "toast": "sonner"
+  },
+  "instructions_to_main_agent": "1. Install 'framer-motion' and 'lucide-react'. 2. Update tailwind.config.js with the colors provided. 3. Create a 'Layout' component that wraps the app with the dark theme and font classes. 4. Build the Character Card component first as it is the core visual element."
+}
