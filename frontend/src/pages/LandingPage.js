@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, Sparkles, ArrowRight, Zap, Image as ImageIcon, Smile } from "lucide-react";
+import { Heart, MessageCircle, Sparkles, ArrowRight, Zap, Image as ImageIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
