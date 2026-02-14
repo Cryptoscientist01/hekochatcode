@@ -56,7 +56,7 @@ export default function AuthPage({ onAuth }) {
         data-testid="back-to-home-btn"
         onClick={() => navigate('/')}
         variant="ghost"
-        className="fixed top-6 left-6 text-white hover:bg-white/10 rounded-xl gap-2"
+        className="fixed top-6 left-6 z-50 text-white hover:bg-white/10 rounded-xl gap-2"
       >
         <ArrowLeft className="w-5 h-5" />
         Back to Home
