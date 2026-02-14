@@ -114,7 +114,7 @@ export default function AuthPage({ onAuth }) {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <Input
                 data-testid="email-input"
@@ -157,7 +157,7 @@ export default function AuthPage({ onAuth }) {
               data-testid="submit-btn"
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90 text-white rounded-full py-6 font-bold shadow-neon"
+              className="w-full bg-primary hover:bg-primary/90 text-white rounded-full py-6 font-bold shadow-neon mt-2"
             >
               {loading ? "Loading..." : (isLogin ? "Sign In" : "Create Account")}
             </Button>
