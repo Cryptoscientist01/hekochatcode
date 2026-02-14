@@ -176,4 +176,22 @@ export default function CharactersPage({ user, onLogout }) {
                   </div>
 
                   {/* Character Info */}
-                  <div className=\"absolute bottom-0 left-0 right-0 p-5\">\n                    <h3 className=\"text-lg font-heading font-bold text-white mb-1\">{character.name}</h3>\n                    <p className=\"text-xs text-text-secondary mb-2\">{character.occupation || 'Available to Chat'}</p>\n                    <p className=\"text-sm text-text-secondary line-clamp-2 leading-relaxed\">\n                      {character.description}\n                    </p>\n                    \n                    {/* Traits */}\n                    <div className=\"flex flex-wrap gap-1.5 mt-3\">\n                      {character.traits.slice(0, 2).map((trait) => (\n                        <span\n                          key={trait}\n                          className=\"px-2 py-1 rounded-lg bg-primary/10 border border-primary/20 text-xs font-medium text-primary\"\n                        >\n                          {trait}\n                        </span>\n                      ))}\n                    </div>\n                  </div>\n\n                  {/* Hover Border Effect */}\n                  <div className=\"absolute inset-0 border-2 border-primary opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none\" \n                       style={{ boxShadow: '0 0 30px rgba(255, 0, 128, 0.4)' }} />\n                  \n                  {/* Hover Overlay */}\n                  <div className=\"absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none\" />\n                </motion.div>\n              ))}\n            </motion.div>\n          )}\n\n          {!loading && characters.length === 0 && (\n            <div className=\"text-center text-text-secondary py-20\">\n              <Sparkles className=\"w-16 h-16 mx-auto mb-4 opacity-50\" />\n              <p className=\"text-lg\">No characters found in this category.</p>\n            </div>\n          )}\n        </div>\n      </div>\n    </div>\n  );\n}
+                  <div className="absolute bottom-0 left-0 right-0 p-5">
+                    <h3 className="text-lg font-heading font-bold text-white mb-1">{character.name}</h3>
+                    <p className="text-xs text-text-secondary mb-2">{character.occupation || 'Available to Chat'}</p>
+                    <p className="text-sm text-text-secondary line-clamp-2 leading-relaxed">
+                      {character.description}
+                    </p>
+                    
+                    {/* Traits */}
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {character.traits.slice(0, 2).map((trait) => (
+                        <span
+                          key={trait}
+                          className="px-2 py-1 rounded-lg bg-primary/10 border border-primary/20 text-xs font-medium text-primary"
+                        >
+                          {trait}
+                        </span>
+                      ))}
+                    </div>
+                  </div>\n\n                  {/* Hover Border Effect */}\n                  <div className=\"absolute inset-0 border-2 border-primary opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none\" \n                       style={{ boxShadow: '0 0 30px rgba(255, 0, 128, 0.4)' }} />\n                  \n                  {/* Hover Overlay */}\n                  <div className=\"absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none\" />\n                </motion.div>\n              ))}\n            </motion.div>\n          )}\n\n          {!loading && characters.length === 0 && (\n            <div className=\"text-center text-text-secondary py-20\">\n              <Sparkles className=\"w-16 h-16 mx-auto mb-4 opacity-50\" />\n              <p className=\"text-lg\">No characters found in this category.</p>\n            </div>\n          )}\n        </div>\n      </div>\n    </div>\n  );\n}
