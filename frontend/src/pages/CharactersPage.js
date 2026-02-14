@@ -144,6 +144,7 @@ export default function CharactersPage({ user, onLogout }) {
                   onClick={() => handleSelectCharacter(character.id)}
                   data-testid={`character-card-${character.id}`}
                   className="relative overflow-hidden rounded-2xl cursor-pointer group shadow-card hover:shadow-card-hover transition-all duration-300"
+                  whileHover={{ y: -8 }}
                 >
                   <div className="aspect-[3/4] relative bg-background-paper">
                     <img
@@ -152,6 +153,19 @@ export default function CharactersPage({ user, onLogout }) {
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                    
+                    {/* Smile animation on hover */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+                      <motion.div
+                        initial={{ scale: 0, rotate: -180 }}
+                        whileHover={{ scale: 1, rotate: 0 }}
+                        className="group-hover:animate-bounce"
+                      >
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/90 to-accent-purple/90 flex items-center justify-center backdrop-blur-sm shadow-neon">
+                          <Smile className="w-8 h-8 text-white" />
+                        </div>
+                      </motion.div>
+                    </div>
                     
                     <div className="absolute top-3 right-3 flex gap-2">
                       <div className="px-3 py-1.5 rounded-full glass-heavy text-xs font-semibold backdrop-blur-xl">
