@@ -88,20 +88,92 @@ export default function CharactersPage({ user, onLogout }) {
       <nav className="fixed top-0 w-full z-50 glass-heavy border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            <button 
-              onClick={() => navigate('/')}
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity group"
-            >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Heart className="w-6 h-6 text-white" fill="white" />
+            <div className="flex items-center gap-6">
+              <button 
+                onClick={() => navigate('/')}
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Heart className="w-6 h-6 text-white" fill="white" />
+                </div>
+                <span className="text-xl font-heading font-bold">AI Companion</span>
+              </button>
+
+              {/* My Chats Dropdown */}
+              <div className="relative" ref={dropdownRef}>
+                <Button
+                  data-testid="my-chats-btn"
+                  onClick={handleToggleChatsDropdown}
+                  variant="ghost"
+                  className="flex items-center gap-2 text-text-secondary hover:text-white hover:bg-white/5 rounded-xl px-4 py-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="font-medium">My Chats</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showChatsDropdown ? 'rotate-180' : ''}`} />
+                </Button>
+
+                <AnimatePresence>
+                  {showChatsDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute top-full left-0 mt-2 w-80 rounded-xl glass-heavy border border-white/10 shadow-xl overflow-hidden"
+                    >
+                      <div className="p-3 border-b border-white/10">
+                        <h3 className="font-heading font-semibold text-sm text-white">Recent Conversations</h3>
+                      </div>
+                      
+                      <div className="max-h-80 overflow-y-auto">
+                        {loadingChats ? (
+                          <div className="p-6 text-center text-text-secondary">
+                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                            <p className="text-sm">Loading chats...</p>
+                          </div>
+                        ) : myChats.length === 0 ? (
+                          <div className="p-6 text-center text-text-secondary">
+                            <MessageCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No conversations yet</p>
+                            <p className="text-xs mt-1">Start chatting with a character!</p>
+                          </div>
+                        ) : (
+                          myChats.map((chat) => (
+                            <button
+                              key={chat.character_id}
+                              data-testid={`chat-item-${chat.character_id}`}
+                              onClick={() => {
+                                navigate(`/chat/${chat.character_id}`);
+                                setShowChatsDropdown(false);
+                              }}
+                              className="w-full p-3 flex items-center gap-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0"
+                            >
+                              <img
+                                src={chat.character_avatar}
+                                alt={chat.character_name}
+                                className="w-10 h-10 rounded-full object-cover border border-white/10"
+                              />
+                              <div className="flex-1 text-left min-w-0">
+                                <p className="font-medium text-sm text-white truncate">{chat.character_name}</p>
+                                <p className="text-xs text-text-secondary truncate">{chat.last_message}</p>
+                              </div>
+                              <div className="flex items-center gap-1 text-text-muted">
+                                <Clock className="w-3 h-3" />
+                                <span className="text-xs">{chat.message_count}</span>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              <span className="text-xl font-heading font-bold">AI Companion</span>
-            </button>
+            </div>
             
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 px-4 py-2 rounded-xl glass-light">
                 <User className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-text-secondary">{user.username}</span>
+                <span className="text-sm font-medium text-text-secondary">{user.username || user.name || user.email}</span>
               </div>
               <Button
                 data-testid="logout-btn"
