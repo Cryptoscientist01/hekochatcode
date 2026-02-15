@@ -19,6 +19,9 @@ from emergentintegrations.llm.openai import OpenAITextToSpeech
 import base64
 import asyncio
 import json
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from pywebpush import webpush, WebPushException
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -32,6 +35,10 @@ EMERGENT_LLM_KEY = os.getenv('EMERGENT_LLM_KEY')
 JWT_SECRET = os.getenv('JWT_SECRET', 'your-secret-key-change-in-production')
 VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY', '')
 VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY', '')
+VAPID_CLAIMS_EMAIL = os.getenv('VAPID_CLAIMS_EMAIL', 'admin@example.com')
+
+# Initialize scheduler
+scheduler = AsyncIOScheduler()
 
 # Create the main app without a prefix
 app = FastAPI()
