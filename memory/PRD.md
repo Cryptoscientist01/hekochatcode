@@ -231,8 +231,8 @@ Build a fully functional AI companion web app similar to candy.ai with features 
 - `GET /api/sitemap.xml` - XML sitemap for SEO
 
 ### Backlog (P1)
-- [ ] Stripe integration for Premium subscription payments
 - [ ] Voice Interaction (TTS) - Read AI messages aloud with voice button
+- [ ] Real PayPal integration (currently in demo mode)
 
 ### Backlog (P2)
 - [ ] Internationalization (i18n) for multi-language UI
