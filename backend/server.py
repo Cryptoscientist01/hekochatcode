@@ -167,6 +167,34 @@ def verify_password(password: str, hashed: str) -> bool:
 def create_token(user_id: str) -> str:
     return jwt.encode({"user_id": user_id}, JWT_SECRET, algorithm="HS256")
 
+def create_admin_token(admin_id: str) -> str:
+    return jwt.encode({"admin_id": admin_id, "is_admin": True}, JWT_SECRET, algorithm="HS256")
+
+def verify_admin_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        if payload.get("is_admin"):
+            return payload
+        return None
+    except:
+        return None
+
+# Initialize default admin account
+async def init_admin():
+    existing_admin = await db.admins.find_one({"email": "admin@admin.com"})
+    if not existing_admin:
+        admin = {
+            "id": str(uuid.uuid4()),
+            "email": "admin@admin.com",
+            "username": "Administrator",
+            "password_hash": hash_password("admin123"),
+            "is_super_admin": True,
+            "created_at": datetime.now(timezone.utc),
+            "last_login": None
+        }
+        await db.admins.insert_one(admin)
+        logging.info("Default admin account created: admin@admin.com / admin123")
+
 # Initialize 20+ default characters on startup
 async def init_characters():
     existing = await db.characters.count_documents({})
