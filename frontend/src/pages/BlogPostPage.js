@@ -158,20 +158,20 @@ export default function BlogPostPage() {
   return (
     <>
       <Helmet>
-        <title>{post.title} | AI Companion Blog</title>
-        <meta name="description" content={post.meta_description} />
-        <meta name="keywords" content={post.meta_keywords?.join(", ")} />
-        <meta name="author" content={post.author} />
+        <title>{`${post.title || 'Blog Post'} | AI Companion Blog`}</title>
+        <meta name="description" content={post.meta_description || post.excerpt || ''} />
+        <meta name="keywords" content={(post.meta_keywords || []).join(", ")} />
+        <meta name="author" content={post.author || 'Admin'} />
         
         {/* Open Graph */}
-        <meta property="og:title" content={post.title} />
-        <meta property="og:description" content={post.meta_description} />
+        <meta property="og:title" content={post.title || ''} />
+        <meta property="og:description" content={post.meta_description || post.excerpt || ''} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={shareUrl} />
         {post.featured_image && <meta property="og:image" content={post.featured_image} />}
-        <meta property="article:published_time" content={post.published_at} />
-        <meta property="article:author" content={post.author} />
-        <meta property="article:section" content={post.category} />
+        <meta property="article:published_time" content={post.published_at || ''} />
+        <meta property="article:author" content={post.author || 'Admin'} />
+        <meta property="article:section" content={post.category || 'General'} />
         {post.tags?.map((tag, i) => (
           <meta key={i} property="article:tag" content={tag} />
         ))}
