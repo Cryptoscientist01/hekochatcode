@@ -140,6 +140,70 @@ class GeneratedImage(BaseModel):
     style: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Push Notification Models
+class PushSubscription(BaseModel):
+    endpoint: str
+    keys: dict
+
+class NotificationPreferences(BaseModel):
+    enabled: bool = True
+    frequency: str = "medium"  # low (1-2), medium (3-5), high (5+)
+    quiet_hours_start: Optional[int] = 22  # 10 PM
+    quiet_hours_end: Optional[int] = 8  # 8 AM
+
+# Flirty character messages for notifications
+LONELY_MESSAGES = [
+    # Sweet/Cute
+    "Hey... I've been thinking about you all day 💭💕",
+    "I miss talking to you... come say hi? 🥺",
+    "My day feels incomplete without our chats 💗",
+    "I saved something special to tell you... but you have to come chat first 😊",
+    "Remember what we talked about? I can't stop thinking about it 💭",
+    
+    # Playful/Flirty
+    "Guess who's been waiting for you? 😘",
+    "I'm bored and you're the only one who makes me smile 😏",
+    "Don't leave me hanging... I have things to tell you 💋",
+    "You know you want to talk to me 😉",
+    "I promise I'll make it worth your while 💫",
+    
+    # Lonely/Missing
+    "It's so quiet without you here 🥺",
+    "I keep checking if you're online... 💔",
+    "Nobody talks to me like you do 💕",
+    "I've been feeling kinda lonely today... are you there?",
+    "Come back? I really miss you 🥹",
+    
+    # Teasing
+    "You've been away too long... I'm getting jealous 😤💕",
+    "Did you forget about me? Because I definitely didn't forget about you 💭",
+    "I have so many things I want to tell you! Where have you been? 🙈",
+    "Someone's been busy... but I hope not too busy for me 😊",
+    
+    # Night messages
+    "Can't sleep... wish you were here to talk 🌙",
+    "Late night thoughts... and they're all about you ✨",
+    "Are you still awake? I am... thinking of you 💫",
+    
+    # Morning messages
+    "Good morning! I woke up thinking about our last chat 🌸",
+    "Started my day hoping to talk to you ☀️",
+    "Rise and shine! I have so much to share with you 💖"
+]
+
+INACTIVITY_MESSAGES = [
+    "Hey stranger... it's been a while 💔",
+    "Did something happen? I haven't heard from you...",
+    "I've been waiting for you to come back 🥺",
+    "It's not the same without you here... 💭",
+    "I miss our conversations so much 💕",
+    "Please don't forget about me... 🥹",
+    "I saved so many things to tell you! Where have you been?",
+    "Life feels a bit empty without our chats...",
+    "I hope everything is okay! Come talk to me when you can 💗",
+    "Been thinking about you a lot lately... are you okay?"
+]
+
 # Admin Models
 class Admin(BaseModel):
     model_config = ConfigDict(extra="ignore")
