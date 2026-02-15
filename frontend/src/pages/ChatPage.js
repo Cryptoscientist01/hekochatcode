@@ -87,9 +87,37 @@ export default function ChatPage({ user, onLogout }) {
   const fetchChatHistory = async () => {
     try {
       const response = await axios.get(`${API}/chat/history/${characterId}?user_id=${user.id}`);
-      setMessages(response.data.messages || []);
+      const history = response.data.messages || [];
+      setMessages(history);
+      
+      // If no messages, get a greeting from the character
+      if (history.length === 0) {
+        fetchGreeting();
+      }
     } catch (error) {
       console.error("Failed to load chat history", error);
+    }
+  };
+
+  const fetchGreeting = async () => {
+    try {
+      const response = await axios.post(`${API}/chat/greeting`, {
+        character_id: characterId,
+        user_id: user.id,
+        message: ""
+      });
+      
+      if (response.data.greeting) {
+        const greetingMsg = {
+          id: response.data.message_id,
+          sender: "ai",
+          content: response.data.greeting,
+          timestamp: new Date().toISOString()
+        };
+        setMessages([greetingMsg]);
+      }
+    } catch (error) {
+      console.error("Failed to get greeting", error);
     }
   };
 
