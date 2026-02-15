@@ -691,7 +691,7 @@ IMPORTANT RULES:
     return {"response": ai_response, "message_id": ai_msg.id}
 
 @api_router.post("/chat/greeting")
-async def get_character_greeting(request: ChatRequest):
+async def get_character_greeting(request: GreetingRequest):
     """Get initial flirty greeting from character"""
     chat_id = f"{request.user_id}_{request.character_id}"
     
