@@ -636,7 +636,10 @@ async def get_character(character_id: str):
 # Chat Routes
 @api_router.post("/chat/send")
 async def send_message(request: ChatSendRequest):
+    # Check both regular characters and custom characters
     character = await db.characters.find_one({"id": request.character_id}, {"_id": 0})
+    if not character:
+        character = await db.custom_characters.find_one({"id": request.character_id}, {"_id": 0})
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
     
