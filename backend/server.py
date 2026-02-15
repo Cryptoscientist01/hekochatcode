@@ -37,6 +37,39 @@ JWT_SECRET = os.getenv('JWT_SECRET', 'your-secret-key-change-in-production')
 VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY', '')
 VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY', '')
 VAPID_CLAIMS_EMAIL = os.getenv('VAPID_CLAIMS_EMAIL', 'admin@example.com')
+STRIPE_API_KEY = os.getenv('STRIPE_API_KEY', '')
+
+# Define subscription plans (amounts in USD - MUST be float format)
+SUBSCRIPTION_PLANS = {
+    "premium_monthly": {
+        "name": "Premium Monthly",
+        "amount": 9.99,
+        "currency": "usd",
+        "interval": "monthly",
+        "features": ["Unlimited messages", "All characters", "10 images/day", "Voice messages", "5 custom characters"]
+    },
+    "premium_yearly": {
+        "name": "Premium Yearly",
+        "amount": 59.99,
+        "currency": "usd",
+        "interval": "yearly",
+        "features": ["Unlimited messages", "All characters", "10 images/day", "Voice messages", "5 custom characters"]
+    },
+    "ultimate_monthly": {
+        "name": "Ultimate Monthly",
+        "amount": 19.99,
+        "currency": "usd",
+        "interval": "monthly",
+        "features": ["Everything in Premium", "Unlimited images", "Unlimited custom characters", "Priority support", "API access"]
+    },
+    "ultimate_yearly": {
+        "name": "Ultimate Yearly",
+        "amount": 119.99,
+        "currency": "usd",
+        "interval": "yearly",
+        "features": ["Everything in Premium", "Unlimited images", "Unlimited custom characters", "Priority support", "API access"]
+    }
+}
 
 # Initialize scheduler
 scheduler = AsyncIOScheduler()
