@@ -10,6 +10,7 @@ import GenerateImagePage from "./pages/GenerateImagePage";
 import CreateCharacterPage from "./pages/CreateCharacterPage";
 import MyAIPage from "./pages/MyAIPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
