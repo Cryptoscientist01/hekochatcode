@@ -175,8 +175,12 @@ function AppRouter({ user, setUser, setToken, admin, setAdmin, adminToken, setAd
       <Route 
         path="/subscription" 
         element={
-          user ? <SubscriptionPage user={user} /> : <Navigate to="/auth" />
+          user ? <SubscriptionPage user={user} token={token} /> : <Navigate to="/auth" />
         } 
+      />
+      <Route 
+        path="/subscription/success" 
+        element={<PaymentSuccessPage token={token} />} 
       />
       <Route 
         path="/profile" 
