@@ -118,8 +118,14 @@ Build a fully functional AI companion web app similar to candy.ai with features 
 - [x] **UI Fix**: Removed character count from "My AI Characters" page
 - [x] **Feature**: Added Subscription page with 3 pricing tiers (Free, Premium, Ultimate), billing toggle, feature comparison
 - [x] **Feature**: Added Profile page with user stats, avatar, subscription badge, quick actions
-- [x] **Feature**: Added Settings page with toggles for appearance, notifications, sound, chat preferences, privacy/data options
+- [x] **Feature**: Added Settings page with fully functional toggles and actions:
+  - Appearance: Dark Mode (applies light/dark theme), Compact Mode (reduces UI density), Language selector
+  - Notifications & Sound: Push notifications, Sound effects, Voice autoplay toggles
+  - Chat Settings: Typing indicator, Auto-save chats, Chat style selector
+  - Privacy & Data: Export Data (downloads all user data as JSON), Reset Settings, Clear Chat History, Delete Account
 - [x] **UI**: Updated sidebar menu with Subscription, Profile, and Settings buttons
+- [x] **Backend**: Added `/api/chat/clear-all` and `/api/users/{id}/delete-account` endpoints
+- [x] **Architecture**: Created SettingsContext for global settings management with localStorage persistence
 
 ### Backlog (P2)
 - [ ] Premium subscription features
