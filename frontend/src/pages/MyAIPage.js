@@ -77,9 +77,6 @@ export default function MyAIPage({ user }) {
             <h2 className="text-4xl font-heading font-bold mb-4">
               Your <span className="text-primary">Creations</span>
             </h2>
-            <p className="text-text-secondary">
-              {characters.length} custom character{characters.length !== 1 ? 's' : ''} created
-            </p>
           </div>
 
           {loading ? (
