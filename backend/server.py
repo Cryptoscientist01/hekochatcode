@@ -1152,6 +1152,221 @@ async def delete_image(image_id: str, user_id: str):
     
     return {"message": "Image deleted successfully"}
 
+# ============ ADMIN ROUTES ============
+
+@api_router.post("/admin/login")
+async def admin_login(credentials: AdminLogin):
+    """Admin login endpoint"""
+    admin = await db.admins.find_one({"email": credentials.email}, {"_id": 0})
+    if not admin:
+        raise HTTPException(status_code=401, detail="Invalid admin credentials")
+    
+    if not verify_password(credentials.password, admin['password_hash']):
+        raise HTTPException(status_code=401, detail="Invalid admin credentials")
+    
+    # Update last login
+    await db.admins.update_one(
+        {"id": admin['id']},
+        {"$set": {"last_login": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    token = create_admin_token(admin['id'])
+    admin.pop('password_hash', None)
+    return {"token": token, "admin": admin}
+
+@api_router.get("/admin/verify")
+async def verify_admin(request: Request):
+    """Verify admin token"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    payload = verify_admin_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    admin = await db.admins.find_one({"id": payload['admin_id']}, {"_id": 0, "password_hash": 0})
+    if not admin:
+        raise HTTPException(status_code=401, detail="Admin not found")
+    
+    return {"admin": admin}
+
+@api_router.put("/admin/update-credentials")
+async def update_admin_credentials(request: Request, update_data: AdminUpdateCredentials):
+    """Update admin credentials"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    payload = verify_admin_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    admin = await db.admins.find_one({"id": payload['admin_id']})
+    if not admin:
+        raise HTTPException(status_code=401, detail="Admin not found")
+    
+    # Verify current password
+    if not verify_password(update_data.current_password, admin['password_hash']):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+    
+    # Prepare updates
+    updates = {}
+    if update_data.new_email:
+        updates["email"] = update_data.new_email
+    if update_data.new_username:
+        updates["username"] = update_data.new_username
+    if update_data.new_password:
+        updates["password_hash"] = hash_password(update_data.new_password)
+    
+    if updates:
+        await db.admins.update_one({"id": admin['id']}, {"$set": updates})
+    
+    return {"message": "Credentials updated successfully"}
+
+@api_router.get("/admin/analytics")
+async def get_admin_analytics(request: Request):
+    """Get platform analytics"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    if not verify_admin_token(token):
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    # Get counts
+    total_users = await db.users.count_documents({})
+    total_characters = await db.characters.count_documents({})
+    total_custom_characters = await db.custom_characters.count_documents({})
+    total_messages = await db.messages.count_documents({})
+    total_images = await db.generated_images.count_documents({})
+    total_favorites = await db.favorites.count_documents({})
+    
+    # Get recent users (last 7 days)
+    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    recent_users = await db.users.count_documents({
+        "created_at": {"$gte": week_ago.isoformat()}
+    })
+    
+    # Get users by day for last 7 days
+    users_by_day = []
+    for i in range(7):
+        day = datetime.now(timezone.utc) - timedelta(days=i)
+        day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+        count = await db.users.count_documents({
+            "created_at": {"$gte": day_start.isoformat(), "$lt": day_end.isoformat()}
+        })
+        users_by_day.append({
+            "date": day_start.strftime("%Y-%m-%d"),
+            "count": count
+        })
+    
+    return {
+        "total_users": total_users,
+        "total_characters": total_characters,
+        "total_custom_characters": total_custom_characters,
+        "total_messages": total_messages,
+        "total_images": total_images,
+        "total_favorites": total_favorites,
+        "recent_users": recent_users,
+        "users_by_day": list(reversed(users_by_day))
+    }
+
+@api_router.get("/admin/users")
+async def get_all_users(request: Request, skip: int = 0, limit: int = 50):
+    """Get all users (paginated)"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    if not verify_admin_token(token):
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).skip(skip).limit(limit).to_list(limit)
+    total = await db.users.count_documents({})
+    
+    # Get additional stats for each user
+    for user in users:
+        user['chat_count'] = await db.messages.count_documents({"chat_id": {"$regex": f"^{user['id']}_"}})
+        user['favorites_count'] = await db.favorites.count_documents({"user_id": user['id']})
+        user['custom_chars_count'] = await db.custom_characters.count_documents({"user_id": user['id']})
+    
+    return {"users": users, "total": total, "skip": skip, "limit": limit}
+
+@api_router.delete("/admin/users/{user_id}")
+async def admin_delete_user(request: Request, user_id: str):
+    """Delete a user and all their data"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    if not verify_admin_token(token):
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    # Delete all user data
+    await db.messages.delete_many({"chat_id": {"$regex": f"^{user_id}_"}})
+    await db.favorites.delete_many({"user_id": user_id})
+    await db.custom_characters.delete_many({"user_id": user_id})
+    await db.generated_images.delete_many({"user_id": user_id})
+    await db.user_sessions.delete_many({"user_id": user_id})
+    result = await db.users.delete_one({"id": user_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "User and all data deleted successfully"}
+
+@api_router.get("/admin/characters")
+async def get_all_characters_admin(request: Request):
+    """Get all characters including custom ones"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    if not verify_admin_token(token):
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    default_chars = await db.characters.find({}, {"_id": 0}).to_list(100)
+    custom_chars = await db.custom_characters.find({}, {"_id": 0}).to_list(100)
+    
+    return {
+        "default_characters": default_chars,
+        "custom_characters": custom_chars,
+        "total_default": len(default_chars),
+        "total_custom": len(custom_chars)
+    }
+
+@api_router.delete("/admin/characters/{character_id}")
+async def admin_delete_character(request: Request, character_id: str, is_custom: bool = False):
+    """Delete a character"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    if not verify_admin_token(token):
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    if is_custom:
+        result = await db.custom_characters.delete_one({"id": character_id})
+    else:
+        result = await db.characters.delete_one({"id": character_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Character not found")
+    
+    # Also remove from favorites
+    await db.favorites.delete_many({"character_id": character_id})
+    
+    return {"message": "Character deleted successfully"}
+
 app.include_router(api_router)
 
 app.add_middleware(
