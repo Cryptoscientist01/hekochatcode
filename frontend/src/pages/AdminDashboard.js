@@ -214,12 +214,13 @@ export default function AdminDashboard({ admin, adminToken, onAdminLogout }) {
             {[
               { id: "analytics", label: "Analytics", icon: BarChart3 },
               { id: "users", label: "Users", icon: Users },
-              { id: "characters", label: "Characters", icon: Sparkles }
+              { id: "characters", label: "Characters", icon: Sparkles },
+              { id: "blog", label: "Blog", icon: FileText }
             ].map(tab => (
               <button
                 key={tab.id}
                 data-testid={`tab-${tab.id}`}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => tab.id === "blog" ? navigate("/optimus/blog") : setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-all border-b-2 ${
                   activeTab === tab.id
                     ? "border-red-500 text-red-500"
