@@ -153,6 +153,14 @@ export default function ChatPage({ user, onLogout }) {
       };
 
       setMessages(prev => [...prev, aiMsg]);
+      
+      // Play sound when message received
+      playSound('message');
+      
+      // Auto-play voice if enabled
+      if (settings.voiceAutoplay) {
+        handleGenerateVoice(response.data.response);
+      }
     } catch (error) {
       toast.error("Failed to send message");
     } finally {
