@@ -123,6 +123,10 @@ class StandaloneImageRequest(BaseModel):
     prompt: str
     style: str = "realistic"
 
+class GreetingRequest(BaseModel):
+    user_id: str
+    character_id: str
+
 class GeneratedImage(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
