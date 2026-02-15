@@ -1933,6 +1933,7 @@ async def admin_create_admin(request: Request, data: AdminCreate):
     }
     
     await db.admins.insert_one(new_admin)
+    new_admin.pop("_id", None)
     await log_admin_activity(admin['id'], admin['email'], "create_admin", "admin", new_admin['id'], f"Role: {data.role}")
     
     new_admin.pop("password_hash")
