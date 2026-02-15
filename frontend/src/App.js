@@ -14,6 +14,9 @@ import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import BlogPage from "./pages/BlogPage";
+import BlogPostPage from "./pages/BlogPostPage";
+import AdminBlogEditor from "./pages/AdminBlogEditor";
 import { Toaster } from "@/components/ui/sonner";
 import { SettingsProvider } from "./context/SettingsContext";
 
