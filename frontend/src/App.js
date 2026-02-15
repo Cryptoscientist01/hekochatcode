@@ -12,6 +12,8 @@ import MyAIPage from "./pages/MyAIPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
+import AdminLoginPage from "./pages/AdminLoginPage";
+import AdminDashboard from "./pages/AdminDashboard";
 import { Toaster } from "@/components/ui/sonner";
 import { SettingsProvider } from "./context/SettingsContext";
 
