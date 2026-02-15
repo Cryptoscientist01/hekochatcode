@@ -76,7 +76,7 @@ function AuthCallback({ onAuth }) {
   );
 }
 
-function AppRouter({ user, setUser, setToken, admin, setAdmin, adminToken, setAdminToken }) {
+function AppRouter({ user, setUser, token, setToken, admin, setAdmin, adminToken, setAdminToken }) {
   const location = useLocation();
 
   const handleAuth = (authToken, authUser) => {
