@@ -151,6 +151,24 @@ function AppRouter({ user, setUser, setToken }) {
           user ? <MyAIPage user={user} /> : <Navigate to="/auth" />
         } 
       />
+      <Route 
+        path="/subscription" 
+        element={
+          user ? <SubscriptionPage user={user} /> : <Navigate to="/auth" />
+        } 
+      />
+      <Route 
+        path="/profile" 
+        element={
+          user ? <ProfilePage user={user} onUpdateUser={setUser} /> : <Navigate to="/auth" />
+        } 
+      />
+      <Route 
+        path="/settings" 
+        element={
+          user ? <SettingsPage user={user} onLogout={handleLogout} /> : <Navigate to="/auth" />
+        } 
+      />
     </Routes>
   );
 }
