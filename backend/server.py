@@ -238,6 +238,14 @@ def create_token(user_id: str) -> str:
 def create_admin_token(admin_id: str) -> str:
     return jwt.encode({"admin_id": admin_id, "is_admin": True}, JWT_SECRET, algorithm="HS256")
 
+def verify_token(token: str) -> dict:
+    """Verify user JWT token and return payload"""
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        return payload
+    except:
+        return None
+
 def verify_admin_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
