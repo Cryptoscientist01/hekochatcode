@@ -670,6 +670,11 @@ IMPORTANT RULES:
     # Remove any hyphens from response
     ai_response = ai_response.replace(" - ", " ").replace("- ", "").replace(" -", "")
     
+    # Add a small delay to make it feel more realistic (1.5-3 seconds)
+    import random
+    delay = random.uniform(1.5, 3.0)
+    await asyncio.sleep(delay)
+    
     user_msg = Message(
         chat_id=chat_id,
         sender="user",
