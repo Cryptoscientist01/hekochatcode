@@ -19,11 +19,13 @@ export default function ChatPage({ user, onLogout }) {
   const [loading, setLoading] = useState(false);
   const [loadingVoice, setLoadingVoice] = useState(false);
   const [loadingImage, setLoadingImage] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     fetchCharacter();
     fetchChatHistory();
+    checkFavorite();
   }, [characterId]);
 
   useEffect(() => {
@@ -36,11 +38,49 @@ export default function ChatPage({ user, onLogout }) {
 
   const fetchCharacter = async () => {
     try {
-      const response = await axios.get(`${API}/characters/${characterId}`);
+      // Try regular characters first
+      let response = await axios.get(`${API}/characters/${characterId}`);
       setCharacter(response.data);
     } catch (error) {
-      toast.error("Failed to load character");
-      navigate('/characters');
+      // Try custom characters
+      try {
+        const response = await axios.get(`${API}/characters/custom/${characterId}`);
+        setCharacter(response.data);
+      } catch (err) {
+        toast.error("Failed to load character");
+        navigate('/characters');
+      }
+    }
+  };
+
+  const checkFavorite = async () => {
+    try {
+      const response = await axios.get(`${API}/favorites/check/${user.id}/${characterId}`);
+      setIsFavorited(response.data.favorited);
+    } catch (error) {
+      console.error("Failed to check favorite status");
+    }
+  };
+
+  const toggleFavorite = async () => {
+    try {
+      if (isFavorited) {
+        await axios.post(`${API}/favorites/remove`, {
+          user_id: user.id,
+          character_id: characterId
+        });
+        setIsFavorited(false);
+        toast.success("Removed from collection");
+      } else {
+        await axios.post(`${API}/favorites/add`, {
+          user_id: user.id,
+          character_id: characterId
+        });
+        setIsFavorited(true);
+        toast.success("Added to collection");
+      }
+    } catch (error) {
+      toast.error("Failed to update collection");
     }
   };
 
