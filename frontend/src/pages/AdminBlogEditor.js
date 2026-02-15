@@ -13,10 +13,13 @@ import { toast } from "sonner";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-export default function AdminBlogEditor({ adminToken }) {
+export default function AdminBlogEditor({ adminToken: propToken }) {
   const navigate = useNavigate();
   const { postId } = useParams();
   const isEditing = Boolean(postId);
+  
+  // Get admin token from props or localStorage
+  const [adminToken, setAdminToken] = useState(propToken || localStorage.getItem('admin_token'));
   
   const [view, setView] = useState(isEditing ? "editor" : "list");
   const [posts, setPosts] = useState([]);
@@ -41,6 +44,13 @@ export default function AdminBlogEditor({ adminToken }) {
   
   const [newKeyword, setNewKeyword] = useState("");
   const [newTag, setNewTag] = useState("");
+
+  // Redirect if no token
+  useEffect(() => {
+    if (!adminToken) {
+      navigate('/optimus');
+    }
+  }, [adminToken, navigate]);
 
   const authHeaders = {
     headers: { Authorization: `Bearer ${adminToken}` }
