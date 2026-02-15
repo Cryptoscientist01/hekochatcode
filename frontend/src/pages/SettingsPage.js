@@ -250,7 +250,7 @@ export default function SettingsPage({ user, onLogout }) {
                 <SettingToggle
                   testId="toggle-notifications"
                   enabled={settings.notifications}
-                  onToggle={() => updateSetting('notifications', !settings.notifications)}
+                  onToggle={() => handleSettingChange('notifications', !settings.notifications)}
                 />
               </SettingRow>
 
@@ -263,7 +263,7 @@ export default function SettingsPage({ user, onLogout }) {
                 <SettingToggle
                   testId="toggle-sound"
                   enabled={settings.soundEnabled}
-                  onToggle={() => updateSetting('soundEnabled', !settings.soundEnabled)}
+                  onToggle={() => handleSettingChange('soundEnabled', !settings.soundEnabled)}
                 />
               </SettingRow>
 
@@ -276,7 +276,7 @@ export default function SettingsPage({ user, onLogout }) {
                 <SettingToggle
                   testId="toggle-voice-autoplay"
                   enabled={settings.voiceAutoplay}
-                  onToggle={() => updateSetting('voiceAutoplay', !settings.voiceAutoplay)}
+                  onToggle={() => handleSettingChange('voiceAutoplay', !settings.voiceAutoplay)}
                 />
               </SettingRow>
             </div>
