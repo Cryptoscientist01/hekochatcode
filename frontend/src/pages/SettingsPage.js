@@ -375,6 +375,40 @@ export default function SettingsPage({ user, onLogout }) {
               </button>
 
               <button
+                data-testid="reset-settings-btn"
+                onClick={handleResetSettings}
+                className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-white/5 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                    <RotateCcw className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="font-medium">Reset Settings</h4>
+                    <p className="text-sm text-text-secondary">Restore all settings to default</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-text-secondary" />
+              </button>
+
+              <button
+                data-testid="clear-chats-btn"
+                onClick={handleClearChatHistory}
+                className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-orange-500/10 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="font-medium text-orange-400">Clear Chat History</h4>
+                    <p className="text-sm text-text-secondary">Delete all your conversations</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-orange-400" />
+              </button>
+
+              <button
                 data-testid="delete-account-btn"
                 onClick={handleDeleteAccount}
                 className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-red-500/10 transition-colors group"
