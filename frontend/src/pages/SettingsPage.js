@@ -332,7 +332,7 @@ export default function SettingsPage({ user, onLogout }) {
                   data-testid="chat-style-select"
                   value={settings.chatBubbleStyle}
                   onChange={(e) => handleSettingChange('chatBubbleStyle', e.target.value)}
-                  className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary"
+                  className="bg-background border border-white/20 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-primary [&>option]:bg-background [&>option]:text-white"
                 >
                   <option value="modern">Modern</option>
                   <option value="classic">Classic</option>
