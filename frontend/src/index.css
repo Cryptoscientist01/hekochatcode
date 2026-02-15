@@ -85,3 +85,135 @@ textarea:focus-visible {
   background: rgba(255, 0, 128, 0.3);
   color: #FFFFFF;
 }
+
+/* ========== LIGHT THEME ========== */
+.light-theme {
+  --background: #f8f9fa;
+  --background-paper: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+}
+
+.light-theme body {
+  background: #f8f9fa !important;
+  color: #1a1a2e !important;
+}
+
+.light-theme .bg-background {
+  background: #f8f9fa !important;
+}
+
+.light-theme .glass-heavy {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: blur(24px);
+}
+
+.light-theme .glass {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.light-theme .text-white {
+  color: #1a1a2e !important;
+}
+
+.light-theme .text-text-secondary {
+  color: #6b7280 !important;
+}
+
+.light-theme .text-text-muted {
+  color: #9ca3af !important;
+}
+
+.light-theme .border-white\/10,
+.light-theme .border-white\/5 {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.light-theme .bg-white\/5,
+.light-theme .bg-white\/10 {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-theme .hover\:bg-white\/5:hover,
+.light-theme .hover\:bg-white\/10:hover {
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+
+.light-theme ::-webkit-scrollbar-track {
+  background: #e5e7eb;
+}
+
+.light-theme select option {
+  background: #ffffff;
+  color: #1a1a2e;
+}
+
+/* ========== COMPACT MODE ========== */
+.compact-mode .text-4xl {
+  font-size: 1.5rem !important;
+}
+
+.compact-mode .text-3xl {
+  font-size: 1.25rem !important;
+}
+
+.compact-mode .text-2xl {
+  font-size: 1.125rem !important;
+}
+
+.compact-mode .text-xl {
+  font-size: 1rem !important;
+}
+
+.compact-mode .text-lg {
+  font-size: 0.9rem !important;
+}
+
+.compact-mode .p-6 {
+  padding: 1rem !important;
+}
+
+.compact-mode .p-8 {
+  padding: 1.25rem !important;
+}
+
+.compact-mode .py-4 {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+.compact-mode .px-6 {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+.compact-mode .gap-6 {
+  gap: 1rem !important;
+}
+
+.compact-mode .gap-4 {
+  gap: 0.75rem !important;
+}
+
+.compact-mode .mb-12 {
+  margin-bottom: 2rem !important;
+}
+
+.compact-mode .mb-8 {
+  margin-bottom: 1.5rem !important;
+}
+
+.compact-mode .space-y-6 > * + * {
+  margin-top: 1rem !important;
+}
+
+.compact-mode .rounded-2xl {
+  border-radius: 0.75rem !important;
+}
+
+.compact-mode .rounded-3xl {
+  border-radius: 1rem !important;
+}
