@@ -1,20 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Crown, Check, Sparkles, Zap, Shield, Star, MessageCircle, Image as ImageIcon, Mic } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Crown, Check, Sparkles, Zap, Shield, Star, MessageCircle, Image as ImageIcon, Mic, CreditCard, Loader2 } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-export default function SubscriptionPage({ user }) {
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+export default function SubscriptionPage({ user, token }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [selectedPlan, setSelectedPlan] = useState("premium");
   const [billingCycle, setBillingCycle] = useState("yearly");
+  const [loading, setLoading] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState(null);
+  const [currentSubscription, setCurrentSubscription] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState("stripe");
 
   const plans = {
     free: {
       name: "Free",
       icon: Star,
       price: { monthly: 0, yearly: 0 },
+      planId: { monthly: "free", yearly: "free" },
       color: "from-gray-500 to-gray-600",
       features: [
         "5 messages per day",
@@ -32,6 +40,7 @@ export default function SubscriptionPage({ user }) {
       name: "Premium",
       icon: Crown,
       price: { monthly: 9.99, yearly: 59.99 },
+      planId: { monthly: "premium_monthly", yearly: "premium_yearly" },
       color: "from-primary to-accent-purple",
       popular: true,
       features: [
@@ -49,6 +58,7 @@ export default function SubscriptionPage({ user }) {
       name: "Ultimate",
       icon: Zap,
       price: { monthly: 19.99, yearly: 119.99 },
+      planId: { monthly: "ultimate_monthly", yearly: "ultimate_yearly" },
       color: "from-amber-500 to-orange-500",
       features: [
         "Everything in Premium",
@@ -64,9 +74,92 @@ export default function SubscriptionPage({ user }) {
     }
   };
 
-  const handleSubscribe = (plan) => {
-    toast.success(`${plan.name} plan selected! Payment integration coming soon.`);
+  // Fetch current subscription
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch(`${API}/payments/user-subscription`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCurrentSubscription(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch subscription:", error);
+      }
+    };
+    fetchSubscription();
+  }, [token]);
+
+  // Check for cancelled payment
+  useEffect(() => {
+    if (searchParams.get("cancelled") === "true") {
+      toast.error("Payment was cancelled. Feel free to try again when you're ready!");
+    }
+  }, [searchParams]);
+
+  const handleSubscribe = async (planKey) => {
+    if (planKey === "free") {
+      toast.info("You're already on the free plan!");
+      return;
+    }
+
+    if (!user || !token) {
+      toast.error("Please sign in to subscribe");
+      navigate("/auth");
+      return;
+    }
+
+    const plan = plans[planKey];
+    const planId = plan.planId[billingCycle];
+
+    setLoadingPlan(planKey);
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API}/payments/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          plan_id: planId,
+          origin_url: window.location.origin,
+          payment_method: paymentMethod
+        })
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.detail || "Failed to create checkout session");
+      }
+
+      const data = await res.json();
+      
+      if (data.note) {
+        toast.info(data.note);
+      }
+
+      // Redirect to payment provider
+      window.location.href = data.checkout_url;
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast.error(error.message || "Failed to start checkout. Please try again.");
+      setLoading(false);
+      setLoadingPlan(null);
+    }
   };
+
+  const isCurrentPlan = useCallback((planKey) => {
+    if (!currentSubscription?.has_subscription) {
+      return planKey === "free";
+    }
+    const subPlanId = currentSubscription?.subscription?.plan_id || "";
+    return subPlanId.startsWith(planKey);
+  }, [currentSubscription]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -111,6 +204,38 @@ export default function SubscriptionPage({ user }) {
             </p>
           </motion.div>
 
+          {/* Payment Method Toggle */}
+          <div className="flex justify-center mb-6">
+            <div className="flex items-center gap-2 p-1 rounded-full glass-heavy">
+              <button
+                data-testid="payment-stripe"
+                onClick={() => setPaymentMethod("stripe")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                  paymentMethod === "stripe"
+                    ? "bg-primary text-white"
+                    : "text-text-secondary hover:text-white"
+                }`}
+              >
+                <CreditCard className="w-4 h-4" />
+                Stripe
+              </button>
+              <button
+                data-testid="payment-paypal"
+                onClick={() => setPaymentMethod("paypal")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                  paymentMethod === "paypal"
+                    ? "bg-blue-500 text-white"
+                    : "text-text-secondary hover:text-white"
+                }`}
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.775.775 0 0 1 .764-.654h6.751c2.241 0 4.12.612 5.135 1.747.473.528.803 1.138.973 1.813.174.695.18 1.48.014 2.383-.017.09-.035.178-.055.266l-.003.01v.076c-.38 2.45-1.614 4.03-3.556 4.79-.927.363-2.01.539-3.228.539H9.993a.955.955 0 0 0-.943.81l-.741 4.718-.004.028L7.076 21.337z"/>
+                </svg>
+                PayPal
+              </button>
+            </div>
+          </div>
+
           {/* Billing Toggle */}
           <div className="flex justify-center mb-10">
             <div className="flex items-center gap-2 p-1 rounded-full glass-heavy">
@@ -146,6 +271,8 @@ export default function SubscriptionPage({ user }) {
               const Icon = plan.icon;
               const price = plan.price[billingCycle];
               const isSelected = selectedPlan === key;
+              const isCurrent = isCurrentPlan(key);
+              const isLoading = loadingPlan === key;
               
               return (
                 <motion.div
@@ -165,6 +292,14 @@ export default function SubscriptionPage({ user }) {
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <span className="px-4 py-1 bg-gradient-to-r from-primary to-accent-purple text-white text-xs font-bold rounded-full">
                         MOST POPULAR
+                      </span>
+                    </div>
+                  )}
+
+                  {isCurrent && (
+                    <div className="absolute -top-3 right-4">
+                      <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+                        CURRENT
                       </span>
                     </div>
                   )}
@@ -206,20 +341,64 @@ export default function SubscriptionPage({ user }) {
                     data-testid={`subscribe-${key}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleSubscribe(plan);
+                      handleSubscribe(key);
                     }}
+                    disabled={loading || isCurrent}
                     className={`w-full ${
-                      key === "free"
+                      key === "free" || isCurrent
                         ? "bg-white/10 hover:bg-white/20 text-white"
                         : `bg-gradient-to-r ${plan.color} hover:opacity-90`
                     }`}
                   >
-                    {key === "free" ? "Current Plan" : `Get ${plan.name}`}
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : isCurrent ? (
+                      "Current Plan"
+                    ) : key === "free" ? (
+                      "Free Tier"
+                    ) : (
+                      `Get ${plan.name}`
+                    )}
                   </Button>
                 </motion.div>
               );
             })}
           </div>
+
+          {/* Payment Methods Info */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="glass rounded-xl p-6 mb-8"
+          >
+            <h3 className="text-lg font-bold mb-4 text-center">Secure Payment Options</h3>
+            <div className="flex flex-wrap justify-center items-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-6 bg-gradient-to-r from-blue-600 to-blue-400 rounded flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">VISA</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-6 bg-gradient-to-r from-red-500 to-orange-400 rounded flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">MC</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-6 bg-gradient-to-r from-blue-800 to-blue-600 rounded flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">AMEX</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-6 bg-[#003087] rounded flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">PP</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
 
           {/* Features Comparison */}
           <motion.div
