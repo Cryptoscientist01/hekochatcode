@@ -192,6 +192,16 @@ class NotificationPreferences(BaseModel):
     quiet_hours_start: Optional[int] = 22  # 10 PM
     quiet_hours_end: Optional[int] = 8  # 8 AM
 
+# Payment Models
+class PaymentCheckoutRequest(BaseModel):
+    plan_id: str
+    origin_url: str
+    payment_method: str = "stripe"  # stripe or paypal
+
+class PaymentStatusRequest(BaseModel):
+    session_id: str
+    payment_method: str = "stripe"
+
 # Flirty character messages for notifications
 LONELY_MESSAGES = [
     # Sweet/Cute
