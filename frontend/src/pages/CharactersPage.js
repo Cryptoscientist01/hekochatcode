@@ -334,7 +334,7 @@ export default function CharactersPage({ user, onLogout }) {
               {activeCategory} <span className="text-primary">Characters</span>
             </h1>
             <p className="text-text-secondary text-lg">
-              {characters.length} unique AI personalities ready to chat
+              Unique AI personalities ready to chat
             </p>
           </motion.div>
 
