@@ -146,7 +146,7 @@ export default function LandingPage({ user, onLogout }) {
             
             <div className="mt-16 flex items-center justify-center gap-12 text-text-secondary">
               <div className="text-center">
-                <div className="text-3xl font-bold text-white mb-1">25+</div>
+                <div className="text-3xl font-bold text-white mb-1">Loads of</div>
                 <div className="text-sm">AI Characters</div>
               </div>
               <div className="w-px h-12 bg-white/10"></div>

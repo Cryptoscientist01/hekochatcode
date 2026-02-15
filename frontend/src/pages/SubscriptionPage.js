@@ -37,7 +37,7 @@ export default function SubscriptionPage({ user }) {
       features: [
         "Unlimited messages",
         "Advanced AI personalities",
-        "Access to all 25+ characters",
+        "Access to all characters",
         "Priority response time",
         "10 image generations/day",
         "Voice message playback",
