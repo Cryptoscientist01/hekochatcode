@@ -1835,6 +1835,7 @@ async def admin_send_notification(request: Request, data: NotificationCreate):
     }
     
     await db.notifications.insert_one(notification)
+    notification.pop("_id", None)
     
     target = data.user_id or "all users"
     await log_admin_activity(admin['id'], admin['email'], "send_notification", "notification", notification['id'], f"To: {target}")
