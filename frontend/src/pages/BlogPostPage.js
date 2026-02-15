@@ -8,7 +8,6 @@ import {
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { toast } from "sonner";
-import { Helmet } from "react-helmet-async";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -25,6 +24,73 @@ export default function BlogPostPage() {
       fetchPost();
     }
   }, [slug]);
+
+  // SEO: Update document head when post loads
+  useEffect(() => {
+    if (post) {
+      // Update title
+      document.title = `${post.title} | AI Companion Blog`;
+      
+      // Update meta tags
+      const updateMeta = (name, content, isProperty = false) => {
+        const attr = isProperty ? 'property' : 'name';
+        let meta = document.querySelector(`meta[${attr}="${name}"]`);
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute(attr, name);
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', content || '');
+      };
+      
+      updateMeta('description', post.meta_description || post.excerpt);
+      updateMeta('keywords', (post.meta_keywords || []).join(', '));
+      updateMeta('author', post.author);
+      
+      // Open Graph
+      updateMeta('og:title', post.title, true);
+      updateMeta('og:description', post.meta_description || post.excerpt, true);
+      updateMeta('og:type', 'article', true);
+      updateMeta('og:url', window.location.href, true);
+      if (post.featured_image) {
+        updateMeta('og:image', post.featured_image, true);
+      }
+      
+      // Twitter Card
+      updateMeta('twitter:card', 'summary_large_image');
+      updateMeta('twitter:title', post.title);
+      updateMeta('twitter:description', post.meta_description || post.excerpt);
+      
+      // Add JSON-LD structured data
+      let scriptEl = document.querySelector('script[type="application/ld+json"]');
+      if (!scriptEl) {
+        scriptEl = document.createElement('script');
+        scriptEl.type = 'application/ld+json';
+        document.head.appendChild(scriptEl);
+      }
+      scriptEl.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": post.title,
+        "description": post.meta_description || post.excerpt,
+        "image": post.featured_image || "",
+        "author": {
+          "@type": "Person",
+          "name": post.author
+        },
+        "datePublished": post.published_at,
+        "dateModified": post.updated_at,
+        "publisher": {
+          "@type": "Organization",
+          "name": "AI Companion"
+        }
+      });
+    }
+    
+    return () => {
+      document.title = 'AI Companion';
+    };
+  }, [post]);
 
   const fetchPost = async () => {
     setLoading(true);
@@ -83,6 +149,8 @@ export default function BlogPostPage() {
         toast.success("Link copied to clipboard!");
         setShowShareMenu(false);
         return;
+      default:
+        break;
     }
     
     if (url) {
@@ -156,291 +224,236 @@ export default function BlogPostPage() {
   }
 
   return (
-    <>
-      <Helmet>
-        <title>{`${post.title || 'Blog Post'} | AI Companion Blog`}</title>
-        <meta name="description" content={post.meta_description || post.excerpt || ''} />
-        <meta name="keywords" content={(post.meta_keywords || []).join(", ")} />
-        <meta name="author" content={post.author || 'Admin'} />
-        
-        {/* Open Graph */}
-        <meta property="og:title" content={post.title || ''} />
-        <meta property="og:description" content={post.meta_description || post.excerpt || ''} />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={shareUrl} />
-        {post.featured_image && <meta property="og:image" content={post.featured_image} />}
-        <meta property="article:published_time" content={post.published_at || ''} />
-        <meta property="article:author" content={post.author || 'Admin'} />
-        <meta property="article:section" content={post.category || 'General'} />
-        {(post.tags || []).map((tag, i) => (
-          <meta key={i} property="article:tag" content={tag || ''} />
-        ))}
-        
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={post.title || ''} />
-        <meta name="twitter:description" content={post.meta_description || post.excerpt || ''} />
-        {post.featured_image && <meta name="twitter:image" content={post.featured_image} />}
-        
-        <link rel="canonical" href={shareUrl} />
-        
-        {/* Structured Data for SEO */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BlogPosting",
-            "headline": post.title || '',
-            "description": post.meta_description || post.excerpt || '',
-            "image": post.featured_image || "",
-            "author": {
-              "@type": "Person",
-              "name": post.author || 'Admin'
-            },
-            "datePublished": post.published_at || '',
-            "dateModified": post.updated_at || '',
-            "publisher": {
-              "@type": "Organization",
-              "name": "AI Companion"
-            },
-            "mainEntityOfPage": {
-              "@type": "WebPage",
-              "@id": shareUrl
-            }
-          })}
-        </script>
-      </Helmet>
-
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="sticky top-0 z-50 glass-heavy border-b border-white/5">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <Link to="/blog" className="flex items-center gap-3 text-text-secondary hover:text-white transition-colors">
-                <ArrowLeft className="w-5 h-5" />
-                <span className="hidden sm:inline">Back to Blog</span>
-              </Link>
-              
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Button
-                    onClick={() => setShowShareMenu(!showShareMenu)}
-                    variant="ghost"
-                    size="icon"
-                    data-testid="share-btn"
-                  >
-                    <Share2 className="w-5 h-5" />
-                  </Button>
-                  
-                  {showShareMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="absolute right-0 top-full mt-2 glass rounded-xl p-2 min-w-[160px]"
-                    >
-                      <button
-                        onClick={() => handleShare("twitter")}
-                        className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
-                      >
-                        <Twitter className="w-4 h-4 text-blue-400" />
-                        Twitter
-                      </button>
-                      <button
-                        onClick={() => handleShare("facebook")}
-                        className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
-                      >
-                        <Facebook className="w-4 h-4 text-blue-600" />
-                        Facebook
-                      </button>
-                      <button
-                        onClick={() => handleShare("linkedin")}
-                        className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
-                      >
-                        <Linkedin className="w-4 h-4 text-blue-500" />
-                        LinkedIn
-                      </button>
-                      <button
-                        onClick={() => handleShare("copy")}
-                        className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
-                      >
-                        <Copy className="w-4 h-4" />
-                        Copy Link
-                      </button>
-                    </motion.div>
-                  )}
-                </div>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 glass-heavy border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Link to="/blog" className="flex items-center gap-3 text-text-secondary hover:text-white transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+              <span className="hidden sm:inline">Back to Blog</span>
+            </Link>
+            
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Button
+                  onClick={() => setShowShareMenu(!showShareMenu)}
+                  variant="ghost"
+                  size="icon"
+                  data-testid="share-btn"
+                >
+                  <Share2 className="w-5 h-5" />
+                </Button>
                 
-                <Link to="/">
-                  <Button variant="ghost" className="text-text-secondary hover:text-white">
-                    Home
-                  </Button>
-                </Link>
+                {showShareMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute right-0 top-full mt-2 glass rounded-xl p-2 min-w-[160px]"
+                  >
+                    <button
+                      onClick={() => handleShare("twitter")}
+                      className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
+                    >
+                      <Twitter className="w-4 h-4 text-blue-400" />
+                      Twitter
+                    </button>
+                    <button
+                      onClick={() => handleShare("facebook")}
+                      className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
+                    >
+                      <Facebook className="w-4 h-4 text-blue-600" />
+                      Facebook
+                    </button>
+                    <button
+                      onClick={() => handleShare("linkedin")}
+                      className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
+                    >
+                      <Linkedin className="w-4 h-4 text-blue-500" />
+                      LinkedIn
+                    </button>
+                    <button
+                      onClick={() => handleShare("copy")}
+                      className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
+                    >
+                      <Copy className="w-4 h-4" />
+                      Copy Link
+                    </button>
+                  </motion.div>
+                )}
               </div>
+              
+              <Link to="/">
+                <Button variant="ghost" className="text-text-secondary hover:text-white">
+                  Home
+                </Button>
+              </Link>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Article */}
-        <article className="py-12 px-6">
-          <div className="max-w-4xl mx-auto">
-            {/* Category Badge */}
+      {/* Article */}
+      <article className="py-12 px-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Category Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Link to={`/blog?category=${post.category}`}>
+              <span className="inline-block px-3 py-1 rounded-full bg-pink-500/20 text-pink-400 text-sm font-medium mb-6">
+                {post.category}
+              </span>
+            </Link>
+          </motion.div>
+
+          {/* Title */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold mb-6"
+          >
+            {post.title}
+          </motion.h1>
+
+          {/* Meta */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-wrap items-center gap-4 text-text-secondary mb-8"
+          >
+            <span className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              {post.author}
+            </span>
+            <span className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              {formatDate(post.published_at)}
+            </span>
+            <span className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              {estimateReadTime(post.content)} min read
+            </span>
+            <span className="flex items-center gap-2">
+              <Eye className="w-4 h-4" />
+              {post.views} views
+            </span>
+          </motion.div>
+
+          {/* Featured Image */}
+          {post.featured_image && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="aspect-video rounded-2xl overflow-hidden mb-10"
             >
-              <Link to={`/blog?category=${post.category}`}>
-                <span className="inline-block px-3 py-1 rounded-full bg-pink-500/20 text-pink-400 text-sm font-medium mb-6">
-                  {post.category}
-                </span>
-              </Link>
+              <img
+                src={post.featured_image}
+                alt={post.title}
+                className="w-full h-full object-cover"
+              />
             </motion.div>
+          )}
 
-            {/* Title */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold mb-6"
-            >
-              {post.title}
-            </motion.h1>
+          {/* Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="prose prose-invert prose-pink max-w-none"
+          >
+            {renderContent(post.content)}
+          </motion.div>
 
-            {/* Meta */}
+          {/* Tags */}
+          {post.tags && post.tags.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex flex-wrap items-center gap-4 text-text-secondary mb-8"
+              transition={{ delay: 0.5 }}
+              className="mt-10 pt-8 border-t border-white/10"
             >
-              <span className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                {post.author}
-              </span>
-              <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                {formatDate(post.published_at)}
-              </span>
-              <span className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                {estimateReadTime(post.content)} min read
-              </span>
-              <span className="flex items-center gap-2">
-                <Eye className="w-4 h-4" />
-                {post.views} views
-              </span>
-            </motion.div>
-
-            {/* Featured Image */}
-            {post.featured_image && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="aspect-video rounded-2xl overflow-hidden mb-10"
-              >
-                <img
-                  src={post.featured_image}
-                  alt={post.title}
-                  className="w-full h-full object-cover"
-                />
-              </motion.div>
-            )}
-
-            {/* Content */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="prose prose-invert prose-pink max-w-none"
-            >
-              {renderContent(post.content)}
-            </motion.div>
-
-            {/* Tags */}
-            {post.tags && post.tags.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="mt-10 pt-8 border-t border-white/10"
-              >
-                <div className="flex items-center gap-3 flex-wrap">
-                  <Tag className="w-4 h-4 text-text-muted" />
-                  {post.tags.map((tag) => (
-                    <Link
-                      key={tag}
-                      to={`/blog?tag=${tag}`}
-                      className="px-3 py-1 rounded-full bg-white/5 text-text-secondary text-sm hover:bg-white/10 transition-colors"
-                    >
-                      #{tag}
-                    </Link>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </div>
-        </article>
-
-        {/* Related Posts */}
-        {relatedPosts.length > 0 && (
-          <section className="py-12 px-6 border-t border-white/5">
-            <div className="max-w-7xl mx-auto">
-              <h2 className="text-2xl font-bold mb-8">Related Articles</h2>
-              <div className="grid md:grid-cols-3 gap-6">
-                {relatedPosts.map((relatedPost) => (
-                  <Link key={relatedPost.id} to={`/blog/${relatedPost.slug}`}>
-                    <div className="glass rounded-2xl overflow-hidden hover:border-pink-500/30 border border-transparent transition-all group">
-                      <div className="aspect-video bg-gradient-to-br from-pink-500/20 to-purple-500/20 overflow-hidden">
-                        {relatedPost.featured_image ? (
-                          <img
-                            src={relatedPost.featured_image}
-                            alt={relatedPost.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <BookOpen className="w-8 h-8 text-pink-500/50" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-5">
-                        <span className="text-xs font-medium text-pink-400 uppercase">
-                          {relatedPost.category}
-                        </span>
-                        <h3 className="font-bold mt-2 line-clamp-2 group-hover:text-pink-400 transition-colors">
-                          {relatedPost.title}
-                        </h3>
-                      </div>
-                    </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Tag className="w-4 h-4 text-text-muted" />
+                {post.tags.map((tag) => (
+                  <Link
+                    key={tag}
+                    to={`/blog?tag=${tag}`}
+                    className="px-3 py-1 rounded-full bg-white/5 text-text-secondary text-sm hover:bg-white/10 transition-colors"
+                  >
+                    #{tag}
                   </Link>
                 ))}
               </div>
-            </div>
-          </section>
-        )}
+            </motion.div>
+          )}
+        </div>
+      </article>
 
-        {/* CTA Section */}
-        <section className="py-16 px-6 border-t border-white/5">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-2xl font-bold mb-4">Ready to Experience AI Companionship?</h2>
-            <p className="text-text-secondary mb-8">
-              Join thousands of users who have found meaningful connections with our AI companions.
-            </p>
-            <Link to="/auth">
-              <Button size="lg" className="bg-gradient-to-r from-pink-500 to-rose-500">
-                Get Started Free
-                <ChevronRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
+      {/* Related Posts */}
+      {relatedPosts.length > 0 && (
+        <section className="py-12 px-6 border-t border-white/5">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-2xl font-bold mb-8">Related Articles</h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              {relatedPosts.map((relatedPost) => (
+                <Link key={relatedPost.id} to={`/blog/${relatedPost.slug}`}>
+                  <div className="glass rounded-2xl overflow-hidden hover:border-pink-500/30 border border-transparent transition-all group">
+                    <div className="aspect-video bg-gradient-to-br from-pink-500/20 to-purple-500/20 overflow-hidden">
+                      {relatedPost.featured_image ? (
+                        <img
+                          src={relatedPost.featured_image}
+                          alt={relatedPost.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <BookOpen className="w-8 h-8 text-pink-500/50" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-5">
+                      <span className="text-xs font-medium text-pink-400 uppercase">
+                        {relatedPost.category}
+                      </span>
+                      <h3 className="font-bold mt-2 line-clamp-2 group-hover:text-pink-400 transition-colors">
+                        {relatedPost.title}
+                      </h3>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
+      )}
 
-        {/* Footer */}
-        <footer className="border-t border-white/5 py-8 px-6">
-          <div className="max-w-7xl mx-auto text-center text-text-muted text-sm">
-            <p>© {new Date().getFullYear()} AI Companion. All rights reserved.</p>
-          </div>
-        </footer>
-      </div>
-    </>
+      {/* CTA Section */}
+      <section className="py-16 px-6 border-t border-white/5">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-2xl font-bold mb-4">Ready to Experience AI Companionship?</h2>
+          <p className="text-text-secondary mb-8">
+            Join thousands of users who have found meaningful connections with our AI companions.
+          </p>
+          <Link to="/auth">
+            <Button size="lg" className="bg-gradient-to-r from-pink-500 to-rose-500">
+              Get Started Free
+              <ChevronRight className="w-5 h-5 ml-2" />
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-white/5 py-8 px-6">
+        <div className="max-w-7xl mx-auto text-center text-text-muted text-sm">
+          <p>© {new Date().getFullYear()} AI Companion. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
   );
 }
