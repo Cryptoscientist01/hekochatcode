@@ -172,14 +172,14 @@ export default function BlogPostPage() {
         <meta property="article:published_time" content={post.published_at || ''} />
         <meta property="article:author" content={post.author || 'Admin'} />
         <meta property="article:section" content={post.category || 'General'} />
-        {post.tags?.map((tag, i) => (
-          <meta key={i} property="article:tag" content={tag} />
+        {(post.tags || []).map((tag, i) => (
+          <meta key={i} property="article:tag" content={tag || ''} />
         ))}
         
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={post.title} />
-        <meta name="twitter:description" content={post.meta_description} />
+        <meta name="twitter:title" content={post.title || ''} />
+        <meta name="twitter:description" content={post.meta_description || post.excerpt || ''} />
         {post.featured_image && <meta name="twitter:image" content={post.featured_image} />}
         
         <link rel="canonical" href={shareUrl} />
@@ -189,15 +189,15 @@ export default function BlogPostPage() {
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "BlogPosting",
-            "headline": post.title,
-            "description": post.meta_description,
+            "headline": post.title || '',
+            "description": post.meta_description || post.excerpt || '',
             "image": post.featured_image || "",
             "author": {
               "@type": "Person",
-              "name": post.author
+              "name": post.author || 'Admin'
             },
-            "datePublished": post.published_at,
-            "dateModified": post.updated_at,
+            "datePublished": post.published_at || '',
+            "dateModified": post.updated_at || '',
             "publisher": {
               "@type": "Organization",
               "name": "AI Companion"
