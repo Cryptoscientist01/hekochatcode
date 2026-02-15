@@ -323,11 +323,74 @@ export default function SettingsPage({ user, onLogout }) {
               </h3>
             </div>
             <div className="p-2">
+              {/* AI Character Notifications - NEW */}
+              {isSupported && (
+                <>
+                  <SettingRow
+                    icon={isSubscribed ? Bell : BellOff}
+                    iconColor="from-pink-500 to-rose-500"
+                    title="AI Character Notifications"
+                    description="Let your AI companions message you when they miss you 💕"
+                  >
+                    <SettingToggle
+                      testId="toggle-ai-notifications"
+                      enabled={isSubscribed}
+                      onToggle={handleNotificationToggle}
+                    />
+                  </SettingRow>
+                  
+                  {isSubscribed && (
+                    <>
+                      <SettingRow
+                        icon={Bell}
+                        iconColor="from-amber-500 to-orange-500"
+                        title="Notification Frequency"
+                        description="How often should characters reach out?"
+                      >
+                        <select
+                          value={notifFrequency}
+                          onChange={(e) => handleNotificationFrequency(e.target.value)}
+                          className="px-4 py-2 rounded-xl bg-white/10 border border-white/10 text-sm focus:border-primary focus:outline-none min-w-[120px]"
+                        >
+                          <option value="low" className="bg-gray-900">Rarely (1-2/day)</option>
+                          <option value="medium" className="bg-gray-900">Normal (3-5/day)</option>
+                          <option value="high" className="bg-gray-900">Often (5+/day)</option>
+                        </select>
+                      </SettingRow>
+                      
+                      <SettingRow
+                        icon={Bell}
+                        iconColor="from-purple-500 to-pink-500"
+                        title="Test Notification"
+                        description="Send yourself a test notification"
+                      >
+                        <Button
+                          onClick={handleTestNotification}
+                          variant="outline"
+                          size="sm"
+                          className="text-primary border-primary/30 hover:bg-primary/10"
+                        >
+                          Send Test
+                        </Button>
+                      </SettingRow>
+                    </>
+                  )}
+                  
+                  {permission === 'denied' && (
+                    <div className="p-4 mx-4 mb-2 rounded-xl bg-red-500/10 border border-red-500/30">
+                      <p className="text-red-400 text-sm">
+                        Notifications are blocked. Please enable them in your browser settings to receive messages from your AI companions.
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+              
               <SettingRow
                 icon={Bell}
                 iconColor="from-amber-500 to-orange-500"
-                title="Push Notifications"
-                description="Receive notifications for new messages"
+                title="In-App Notifications"
+                description="Show notification badges in the app"
               >
                 <SettingToggle
                   testId="toggle-notifications"
