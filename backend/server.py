@@ -2926,6 +2926,350 @@ async def delete_blog_post(request: Request, post_id: str):
     
     return {"message": "Blog post deleted successfully"}
 
+# ==========================================
+# PAYMENT ENDPOINTS - Stripe & PayPal
+# ==========================================
+
+@api_router.get("/payments/plans")
+async def get_subscription_plans():
+    """Get all available subscription plans"""
+    return {"plans": SUBSCRIPTION_PLANS}
+
+@api_router.post("/payments/checkout")
+async def create_checkout_session(request: Request, checkout_request: PaymentCheckoutRequest):
+    """Create a payment checkout session for Stripe or PayPal"""
+    # Verify user token
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    token = auth_header.split(" ")[1]
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user_id = payload.get("user_id")
+    
+    # Validate plan
+    if checkout_request.plan_id not in SUBSCRIPTION_PLANS:
+        raise HTTPException(status_code=400, detail="Invalid plan selected")
+    
+    plan = SUBSCRIPTION_PLANS[checkout_request.plan_id]
+    
+    if checkout_request.payment_method == "stripe":
+        if not STRIPE_API_KEY:
+            raise HTTPException(status_code=500, detail="Stripe not configured")
+        
+        # Build success and cancel URLs from frontend origin
+        success_url = f"{checkout_request.origin_url}/subscription/success?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{checkout_request.origin_url}/subscription?cancelled=true"
+        
+        # Initialize Stripe checkout
+        host_url = str(request.base_url)
+        webhook_url = f"{host_url}api/webhook/stripe"
+        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+        
+        # Create checkout session
+        checkout_req = CheckoutSessionRequest(
+            amount=float(plan["amount"]),
+            currency=plan["currency"],
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                "user_id": user_id,
+                "plan_id": checkout_request.plan_id,
+                "plan_name": plan["name"]
+            }
+        )
+        
+        session = await stripe_checkout.create_checkout_session(checkout_req)
+        
+        # Create payment transaction record (BEFORE redirecting)
+        transaction = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "session_id": session.session_id,
+            "payment_method": "stripe",
+            "plan_id": checkout_request.plan_id,
+            "plan_name": plan["name"],
+            "amount": plan["amount"],
+            "currency": plan["currency"],
+            "status": "initiated",
+            "payment_status": "pending",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.payment_transactions.insert_one(transaction)
+        del transaction["_id"]
+        
+        return {
+            "checkout_url": session.url,
+            "session_id": session.session_id,
+            "payment_method": "stripe"
+        }
+    
+    elif checkout_request.payment_method == "paypal":
+        # PayPal - Mock response for now (real integration requires PayPal SDK)
+        # Create pending transaction for PayPal
+        session_id = str(uuid.uuid4())
+        transaction = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "session_id": session_id,
+            "payment_method": "paypal",
+            "plan_id": checkout_request.plan_id,
+            "plan_name": plan["name"],
+            "amount": plan["amount"],
+            "currency": plan["currency"],
+            "status": "initiated",
+            "payment_status": "pending",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.payment_transactions.insert_one(transaction)
+        del transaction["_id"]
+        
+        # Return mock PayPal checkout URL
+        return {
+            "checkout_url": f"{checkout_request.origin_url}/subscription/paypal-mock?session_id={session_id}&plan={checkout_request.plan_id}&amount={plan['amount']}",
+            "session_id": session_id,
+            "payment_method": "paypal",
+            "note": "PayPal integration is in demo mode. Use Stripe for live payments."
+        }
+    
+    else:
+        raise HTTPException(status_code=400, detail="Invalid payment method. Use 'stripe' or 'paypal'")
+
+@api_router.get("/payments/status/{session_id}")
+async def get_payment_status(request: Request, session_id: str, payment_method: str = "stripe"):
+    """Get payment status by session ID"""
+    # Find transaction in database
+    transaction = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+    
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    if payment_method == "stripe" and STRIPE_API_KEY:
+        # Get actual status from Stripe
+        host_url = str(request.base_url)
+        webhook_url = f"{host_url}api/webhook/stripe"
+        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+        
+        try:
+            status_response = await stripe_checkout.get_checkout_status(session_id)
+            
+            # Update transaction status if changed
+            new_status = "completed" if status_response.payment_status == "paid" else status_response.status
+            new_payment_status = status_response.payment_status
+            
+            if transaction.get("payment_status") != new_payment_status:
+                await db.payment_transactions.update_one(
+                    {"session_id": session_id},
+                    {"$set": {
+                        "status": new_status,
+                        "payment_status": new_payment_status,
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                
+                # If payment successful, update user subscription
+                if new_payment_status == "paid":
+                    await update_user_subscription(transaction["user_id"], transaction["plan_id"])
+            
+            return {
+                "session_id": session_id,
+                "status": new_status,
+                "payment_status": new_payment_status,
+                "amount": status_response.amount_total / 100,  # Convert from cents
+                "currency": status_response.currency,
+                "plan_id": transaction.get("plan_id"),
+                "plan_name": transaction.get("plan_name")
+            }
+        except Exception as e:
+            logging.error(f"Error checking Stripe status: {e}")
+            return {
+                "session_id": session_id,
+                "status": transaction.get("status", "unknown"),
+                "payment_status": transaction.get("payment_status", "unknown"),
+                "amount": transaction.get("amount"),
+                "currency": transaction.get("currency"),
+                "plan_id": transaction.get("plan_id"),
+                "plan_name": transaction.get("plan_name")
+            }
+    
+    # Return stored transaction status for PayPal or when Stripe not available
+    return {
+        "session_id": session_id,
+        "status": transaction.get("status", "unknown"),
+        "payment_status": transaction.get("payment_status", "unknown"),
+        "amount": transaction.get("amount"),
+        "currency": transaction.get("currency"),
+        "plan_id": transaction.get("plan_id"),
+        "plan_name": transaction.get("plan_name")
+    }
+
+async def update_user_subscription(user_id: str, plan_id: str):
+    """Update user subscription status after successful payment"""
+    plan = SUBSCRIPTION_PLANS.get(plan_id, {})
+    interval = plan.get("interval", "monthly")
+    
+    # Calculate subscription end date
+    if interval == "yearly":
+        end_date = datetime.now(timezone.utc) + timedelta(days=365)
+    else:
+        end_date = datetime.now(timezone.utc) + timedelta(days=30)
+    
+    subscription_data = {
+        "plan_id": plan_id,
+        "plan_name": plan.get("name", "Unknown"),
+        "status": "active",
+        "start_date": datetime.now(timezone.utc).isoformat(),
+        "end_date": end_date.isoformat(),
+        "features": plan.get("features", [])
+    }
+    
+    await db.users.update_one(
+        {"$or": [{"id": user_id}, {"user_id": user_id}]},
+        {"$set": {"subscription": subscription_data}}
+    )
+    
+    logging.info(f"User {user_id} subscription updated to {plan_id}")
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhook events"""
+    body = await request.body()
+    sig_header = request.headers.get("Stripe-Signature")
+    
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    
+    host_url = str(request.base_url)
+    webhook_url = f"{host_url}api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    
+    try:
+        webhook_response = await stripe_checkout.handle_webhook(body, sig_header)
+        
+        if webhook_response.event_type == "checkout.session.completed":
+            session_id = webhook_response.session_id
+            
+            # Update transaction
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": {
+                    "status": "completed",
+                    "payment_status": "paid",
+                    "webhook_processed": True,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            # Update user subscription
+            transaction = await db.payment_transactions.find_one({"session_id": session_id})
+            if transaction:
+                await update_user_subscription(transaction["user_id"], transaction["plan_id"])
+        
+        return {"status": "processed"}
+    except Exception as e:
+        logging.error(f"Webhook error: {e}")
+        return {"status": "error", "message": str(e)}
+
+@api_router.get("/payments/user-subscription")
+async def get_user_subscription(request: Request):
+    """Get current user's subscription status"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    token = auth_header.split(" ")[1]
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user_id = payload.get("user_id")
+    
+    user = await db.users.find_one(
+        {"$or": [{"id": user_id}, {"user_id": user_id}]},
+        {"_id": 0, "subscription": 1}
+    )
+    
+    if not user or not user.get("subscription"):
+        return {
+            "has_subscription": False,
+            "subscription": {
+                "plan_id": "free",
+                "plan_name": "Free",
+                "status": "active",
+                "features": ["5 messages per day", "Basic AI responses", "Access to 5 characters"]
+            }
+        }
+    
+    subscription = user["subscription"]
+    
+    # Check if subscription is still valid
+    end_date_str = subscription.get("end_date")
+    if end_date_str:
+        end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+        if end_date < datetime.now(timezone.utc):
+            subscription["status"] = "expired"
+    
+    return {
+        "has_subscription": subscription.get("status") == "active",
+        "subscription": subscription
+    }
+
+@api_router.get("/payments/history")
+async def get_payment_history(request: Request):
+    """Get user's payment history"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    token = auth_header.split(" ")[1]
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user_id = payload.get("user_id")
+    
+    transactions = await db.payment_transactions.find(
+        {"user_id": user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    
+    return {"transactions": transactions}
+
+# PayPal Mock Payment Confirmation (for demo purposes)
+@api_router.post("/payments/paypal-confirm")
+async def confirm_paypal_payment(request: Request):
+    """Mock PayPal payment confirmation (for demo)"""
+    data = await request.json()
+    session_id = data.get("session_id")
+    
+    if not session_id:
+        raise HTTPException(status_code=400, detail="Session ID required")
+    
+    transaction = await db.payment_transactions.find_one({"session_id": session_id})
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    if transaction.get("payment_method") != "paypal":
+        raise HTTPException(status_code=400, detail="Not a PayPal transaction")
+    
+    # Update as completed (mock)
+    await db.payment_transactions.update_one(
+        {"session_id": session_id},
+        {"$set": {
+            "status": "completed",
+            "payment_status": "paid",
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Update user subscription
+    await update_user_subscription(transaction["user_id"], transaction["plan_id"])
+    
+    return {"status": "success", "message": "Payment confirmed (demo mode)"}
+
 # Sitemap endpoint for SEO
 @api_router.get("/sitemap.xml")
 async def get_sitemap():
