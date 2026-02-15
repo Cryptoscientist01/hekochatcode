@@ -1367,6 +1367,295 @@ async def admin_delete_character(request: Request, character_id: str, is_custom:
     
     return {"message": "Character deleted successfully"}
 
+# ============ BLOG ROUTES (SEO FRIENDLY) ============
+
+class BlogPost(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    slug: str
+    content: str
+    excerpt: str
+    meta_description: str
+    meta_keywords: List[str] = []
+    featured_image: Optional[str] = None
+    author: str = "Admin"
+    category: str = "General"
+    tags: List[str] = []
+    status: str = "draft"  # draft, published
+    published_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    views: int = 0
+
+class BlogPostCreate(BaseModel):
+    title: str
+    slug: str
+    content: str
+    excerpt: str
+    meta_description: str
+    meta_keywords: List[str] = []
+    featured_image: Optional[str] = None
+    author: str = "Admin"
+    category: str = "General"
+    tags: List[str] = []
+    status: str = "draft"
+
+class BlogPostUpdate(BaseModel):
+    title: Optional[str] = None
+    slug: Optional[str] = None
+    content: Optional[str] = None
+    excerpt: Optional[str] = None
+    meta_description: Optional[str] = None
+    meta_keywords: Optional[List[str]] = None
+    featured_image: Optional[str] = None
+    author: Optional[str] = None
+    category: Optional[str] = None
+    tags: Optional[List[str]] = None
+    status: Optional[str] = None
+
+# Public blog routes (for SEO - no auth required)
+@api_router.get("/blog/posts")
+async def get_blog_posts(
+    page: int = 1,
+    limit: int = 10,
+    category: Optional[str] = None,
+    tag: Optional[str] = None
+):
+    """Get published blog posts with pagination (public endpoint)"""
+    query = {"status": "published"}
+    if category:
+        query["category"] = category
+    if tag:
+        query["tags"] = tag
+    
+    skip = (page - 1) * limit
+    posts = await db.blog_posts.find(query, {"_id": 0, "content": 0}).sort("published_at", -1).skip(skip).limit(limit).to_list(limit)
+    total = await db.blog_posts.count_documents(query)
+    
+    return {
+        "posts": posts,
+        "total": total,
+        "page": page,
+        "pages": (total + limit - 1) // limit
+    }
+
+@api_router.get("/blog/posts/{slug}")
+async def get_blog_post_by_slug(slug: str):
+    """Get a single blog post by slug (public endpoint)"""
+    post = await db.blog_posts.find_one({"slug": slug, "status": "published"}, {"_id": 0})
+    if not post:
+        raise HTTPException(status_code=404, detail="Blog post not found")
+    
+    # Increment view count
+    await db.blog_posts.update_one({"slug": slug}, {"$inc": {"views": 1}})
+    
+    return post
+
+@api_router.get("/blog/categories")
+async def get_blog_categories():
+    """Get all blog categories with post counts"""
+    pipeline = [
+        {"$match": {"status": "published"}},
+        {"$group": {"_id": "$category", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    categories = await db.blog_posts.aggregate(pipeline).to_list(50)
+    return {"categories": [{"name": c["_id"], "count": c["count"]} for c in categories]}
+
+@api_router.get("/blog/tags")
+async def get_blog_tags():
+    """Get all blog tags"""
+    pipeline = [
+        {"$match": {"status": "published"}},
+        {"$unwind": "$tags"},
+        {"$group": {"_id": "$tags", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 30}
+    ]
+    tags = await db.blog_posts.aggregate(pipeline).to_list(30)
+    return {"tags": [{"name": t["_id"], "count": t["count"]} for t in tags]}
+
+@api_router.get("/blog/related/{slug}")
+async def get_related_posts(slug: str, limit: int = 3):
+    """Get related blog posts based on category and tags"""
+    current_post = await db.blog_posts.find_one({"slug": slug}, {"_id": 0})
+    if not current_post:
+        raise HTTPException(status_code=404, detail="Blog post not found")
+    
+    # Find posts with similar category or tags
+    query = {
+        "status": "published",
+        "slug": {"$ne": slug},
+        "$or": [
+            {"category": current_post.get("category")},
+            {"tags": {"$in": current_post.get("tags", [])}}
+        ]
+    }
+    
+    related = await db.blog_posts.find(query, {"_id": 0, "content": 0}).sort("views", -1).limit(limit).to_list(limit)
+    return {"related": related}
+
+# Admin blog routes (protected)
+@api_router.get("/admin/blog/posts")
+async def admin_get_all_blog_posts(request: Request, page: int = 1, limit: int = 20):
+    """Get all blog posts including drafts (admin only)"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    if not verify_admin_token(token):
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    skip = (page - 1) * limit
+    posts = await db.blog_posts.find({}, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    total = await db.blog_posts.count_documents({})
+    
+    return {
+        "posts": posts,
+        "total": total,
+        "page": page,
+        "pages": (total + limit - 1) // limit
+    }
+
+@api_router.get("/admin/blog/posts/{post_id}")
+async def admin_get_blog_post(request: Request, post_id: str):
+    """Get a single blog post by ID (admin only)"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    if not verify_admin_token(token):
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    post = await db.blog_posts.find_one({"id": post_id}, {"_id": 0})
+    if not post:
+        raise HTTPException(status_code=404, detail="Blog post not found")
+    
+    return post
+
+@api_router.post("/admin/blog/posts")
+async def create_blog_post(request: Request, post_data: BlogPostCreate):
+    """Create a new blog post (admin only)"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    if not verify_admin_token(token):
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    # Check for duplicate slug
+    existing = await db.blog_posts.find_one({"slug": post_data.slug})
+    if existing:
+        raise HTTPException(status_code=400, detail="A post with this slug already exists")
+    
+    now = datetime.now(timezone.utc)
+    post = {
+        "id": str(uuid.uuid4()),
+        "title": post_data.title,
+        "slug": post_data.slug,
+        "content": post_data.content,
+        "excerpt": post_data.excerpt,
+        "meta_description": post_data.meta_description,
+        "meta_keywords": post_data.meta_keywords,
+        "featured_image": post_data.featured_image,
+        "author": post_data.author,
+        "category": post_data.category,
+        "tags": post_data.tags,
+        "status": post_data.status,
+        "published_at": now.isoformat() if post_data.status == "published" else None,
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat(),
+        "views": 0
+    }
+    
+    await db.blog_posts.insert_one(post)
+    post.pop("_id", None)
+    
+    return {"post": post, "message": "Blog post created successfully"}
+
+@api_router.put("/admin/blog/posts/{post_id}")
+async def update_blog_post(request: Request, post_id: str, update_data: BlogPostUpdate):
+    """Update a blog post (admin only)"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    if not verify_admin_token(token):
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    existing = await db.blog_posts.find_one({"id": post_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Blog post not found")
+    
+    # Check for slug conflict if changing slug
+    if update_data.slug and update_data.slug != existing.get("slug"):
+        conflict = await db.blog_posts.find_one({"slug": update_data.slug, "id": {"$ne": post_id}})
+        if conflict:
+            raise HTTPException(status_code=400, detail="A post with this slug already exists")
+    
+    updates = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Set published_at if status changed to published
+    if update_data.status == "published" and existing.get("status") != "published":
+        updates["published_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.blog_posts.update_one({"id": post_id}, {"$set": updates})
+    
+    updated = await db.blog_posts.find_one({"id": post_id}, {"_id": 0})
+    return {"post": updated, "message": "Blog post updated successfully"}
+
+@api_router.delete("/admin/blog/posts/{post_id}")
+async def delete_blog_post(request: Request, post_id: str):
+    """Delete a blog post (admin only)"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    if not verify_admin_token(token):
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    result = await db.blog_posts.delete_one({"id": post_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Blog post not found")
+    
+    return {"message": "Blog post deleted successfully"}
+
+# Sitemap endpoint for SEO
+@api_router.get("/sitemap.xml")
+async def get_sitemap():
+    """Generate sitemap XML for SEO"""
+    from fastapi.responses import Response as XMLResponse
+    
+    posts = await db.blog_posts.find({"status": "published"}, {"_id": 0, "slug": 1, "updated_at": 1}).to_list(1000)
+    
+    base_url = os.environ.get('SITE_URL', 'https://example.com')
+    
+    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    # Add homepage
+    xml_content += f'  <url><loc>{base_url}/</loc><priority>1.0</priority></url>\n'
+    xml_content += f'  <url><loc>{base_url}/blog</loc><priority>0.9</priority></url>\n'
+    
+    # Add blog posts
+    for post in posts:
+        xml_content += f'  <url>\n'
+        xml_content += f'    <loc>{base_url}/blog/{post["slug"]}</loc>\n'
+        xml_content += f'    <lastmod>{post.get("updated_at", "")[:10]}</lastmod>\n'
+        xml_content += f'    <priority>0.8</priority>\n'
+        xml_content += f'  </url>\n'
+    
+    xml_content += '</urlset>'
+    
+    return XMLResponse(content=xml_content, media_type="application/xml")
+
 app.include_router(api_router)
 
 app.add_middleware(
