@@ -88,6 +88,50 @@ class ImageGenerateRequest(BaseModel):
 class GoogleSessionRequest(BaseModel):
     session_id: str
 
+# New models for additional features
+class FavoriteRequest(BaseModel):
+    user_id: str
+    character_id: str
+
+class CustomCharacter(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    name: str
+    age: int
+    personality: str
+    traits: List[str]
+    category: str = "Custom"
+    avatar_url: str
+    description: str
+    occupation: Optional[str] = None
+    is_custom: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CreateCharacterRequest(BaseModel):
+    user_id: str
+    name: str
+    age: int
+    personality: str
+    traits: List[str]
+    description: str
+    occupation: Optional[str] = None
+    avatar_prompt: Optional[str] = None
+
+class StandaloneImageRequest(BaseModel):
+    user_id: str
+    prompt: str
+    style: str = "realistic"
+
+class GeneratedImage(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    prompt: str
+    image_url: str
+    style: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # Helper function to hash passwords
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
