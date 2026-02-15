@@ -188,7 +188,7 @@ export default function CharactersPage({ user, onLogout }) {
 
                 <button
                   data-testid="menu-collection"
-                  onClick={() => { toast.info("Collection feature coming soon!"); }}
+                  onClick={() => { navigate('/collection'); setShowSideMenu(false); }}
                   className="w-full flex items-center gap-4 px-4 py-4 rounded-xl hover:bg-white/10 transition-all text-left group"
                 >
                   <FolderHeart className="w-5 h-5 text-white group-hover:text-primary transition-colors" />
@@ -197,7 +197,7 @@ export default function CharactersPage({ user, onLogout }) {
 
                 <button
                   data-testid="menu-generate-image"
-                  onClick={() => { toast.info("Generate Image feature coming soon!"); }}
+                  onClick={() => { navigate('/generate-image'); setShowSideMenu(false); }}
                   className="w-full flex items-center gap-4 px-4 py-4 rounded-xl hover:bg-white/10 transition-all text-left group"
                 >
                   <ImageIcon className="w-5 h-5 text-white group-hover:text-primary transition-colors" />
@@ -206,7 +206,7 @@ export default function CharactersPage({ user, onLogout }) {
 
                 <button
                   data-testid="menu-create-character"
-                  onClick={() => { toast.info("Create Character feature coming soon!"); }}
+                  onClick={() => { navigate('/create-character'); setShowSideMenu(false); }}
                   className="w-full flex items-center gap-4 px-4 py-4 rounded-xl hover:bg-white/10 transition-all text-left group"
                 >
                   <Wand2 className="w-5 h-5 text-white group-hover:text-primary transition-colors" />
@@ -215,7 +215,7 @@ export default function CharactersPage({ user, onLogout }) {
 
                 <button
                   data-testid="menu-my-ai"
-                  onClick={() => { toast.info("My AI feature coming soon!"); }}
+                  onClick={() => { navigate('/my-ai'); setShowSideMenu(false); }}
                   className="w-full flex items-center gap-4 px-4 py-4 rounded-xl hover:bg-white/10 transition-all text-left group"
                 >
                   <HeartHandshake className="w-5 h-5 text-white group-hover:text-primary transition-colors" />
