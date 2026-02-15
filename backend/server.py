@@ -997,6 +997,268 @@ async def generate_image(request: ImageGenerateRequest):
         logging.error(f"Image generation error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============ PUSH NOTIFICATIONS ROUTES ============
+
+@api_router.get("/push/vapid-public-key")
+async def get_vapid_public_key():
+    """Get VAPID public key for push subscriptions"""
+    # Generate a simple key if not set (for demo purposes)
+    # In production, use proper VAPID keys
+    return {"publicKey": VAPID_PUBLIC_KEY or "demo-key"}
+
+@api_router.post("/push/subscribe")
+async def subscribe_to_push(request: Request, subscription: PushSubscription):
+    """Subscribe user to push notifications"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    token = auth_header.split(" ")[1]
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user_id = payload.get('user_id')
+    
+    # Store or update subscription
+    await db.push_subscriptions.update_one(
+        {"user_id": user_id},
+        {"$set": {
+            "user_id": user_id,
+            "endpoint": subscription.endpoint,
+            "keys": subscription.keys,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "is_active": True
+        }},
+        upsert=True
+    )
+    
+    # Update user's last activity
+    await db.users.update_one(
+        {"$or": [{"id": user_id}, {"user_id": user_id}]},
+        {"$set": {"last_active": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Subscribed to notifications"}
+
+@api_router.post("/push/unsubscribe")
+async def unsubscribe_from_push(request: Request):
+    """Unsubscribe user from push notifications"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    token = auth_header.split(" ")[1]
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user_id = payload.get('user_id')
+    
+    await db.push_subscriptions.update_one(
+        {"user_id": user_id},
+        {"$set": {"is_active": False}}
+    )
+    
+    return {"message": "Unsubscribed from notifications"}
+
+@api_router.get("/push/preferences/{user_id}")
+async def get_notification_preferences(user_id: str):
+    """Get user's notification preferences"""
+    prefs = await db.notification_preferences.find_one({"user_id": user_id}, {"_id": 0})
+    
+    if not prefs:
+        # Return defaults
+        return {
+            "enabled": True,
+            "frequency": "medium",
+            "quiet_hours_start": 22,
+            "quiet_hours_end": 8
+        }
+    
+    return prefs
+
+@api_router.put("/push/preferences/{user_id}")
+async def update_notification_preferences(user_id: str, prefs: NotificationPreferences):
+    """Update user's notification preferences"""
+    await db.notification_preferences.update_one(
+        {"user_id": user_id},
+        {"$set": {
+            "user_id": user_id,
+            "enabled": prefs.enabled,
+            "frequency": prefs.frequency,
+            "quiet_hours_start": prefs.quiet_hours_start,
+            "quiet_hours_end": prefs.quiet_hours_end,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    
+    return {"message": "Preferences updated"}
+
+@api_router.post("/push/update-activity")
+async def update_user_activity(request: Request):
+    """Update user's last activity timestamp"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return {"message": "ok"}  # Silent fail for non-auth requests
+    
+    token = auth_header.split(" ")[1]
+    payload = verify_token(token)
+    if not payload:
+        return {"message": "ok"}
+    
+    user_id = payload.get('user_id')
+    
+    await db.users.update_one(
+        {"$or": [{"id": user_id}, {"user_id": user_id}]},
+        {"$set": {"last_active": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Activity updated"}
+
+@api_router.get("/push/generate-notification/{user_id}")
+async def generate_notification_for_user(user_id: str, notification_type: str = "random"):
+    """Generate a notification message for a user (called by cron/scheduler)"""
+    
+    # Check notification preferences
+    prefs = await db.notification_preferences.find_one({"user_id": user_id})
+    if prefs and not prefs.get("enabled", True):
+        return {"message": "Notifications disabled", "send": False}
+    
+    # Check quiet hours
+    current_hour = datetime.now(timezone.utc).hour
+    quiet_start = prefs.get("quiet_hours_start", 22) if prefs else 22
+    quiet_end = prefs.get("quiet_hours_end", 8) if prefs else 8
+    
+    if quiet_start > quiet_end:  # Overnight quiet hours (e.g., 22:00 - 08:00)
+        if current_hour >= quiet_start or current_hour < quiet_end:
+            return {"message": "Quiet hours", "send": False}
+    else:
+        if quiet_start <= current_hour < quiet_end:
+            return {"message": "Quiet hours", "send": False}
+    
+    # Check daily notification count
+    today = datetime.now(timezone.utc).date().isoformat()
+    daily_count = await db.sent_notifications.count_documents({
+        "user_id": user_id,
+        "date": today
+    })
+    
+    # Get max based on frequency
+    frequency = prefs.get("frequency", "medium") if prefs else "medium"
+    max_daily = {"low": 2, "medium": 5, "high": 8}.get(frequency, 5)
+    
+    if daily_count >= max_daily:
+        return {"message": "Daily limit reached", "send": False}
+    
+    # Pick a character to send notification
+    # Priority: 1. Characters user chatted with, 2. Favorites, 3. Random
+    
+    character = None
+    character_source = "random"
+    
+    # Try to get a character user has chatted with
+    recent_chats = await db.messages.aggregate([
+        {"$match": {"chat_id": {"$regex": f"^{user_id}_"}}},
+        {"$group": {"_id": {"$arrayElemAt": [{"$split": ["$chat_id", "_"]}, 1]}}},
+        {"$sample": {"size": 1}}
+    ]).to_list(1)
+    
+    if recent_chats:
+        char_id = recent_chats[0]["_id"]
+        character = await db.characters.find_one({"id": char_id}, {"_id": 0})
+        if not character:
+            character = await db.custom_characters.find_one({"id": char_id}, {"_id": 0})
+        if character:
+            character_source = "chatted"
+    
+    # If no chatted character, try favorites
+    if not character:
+        favorite = await db.favorites.find_one({"user_id": user_id})
+        if favorite:
+            character = await db.characters.find_one({"id": favorite["character_id"]}, {"_id": 0})
+            if character:
+                character_source = "favorite"
+    
+    # If still no character, pick random
+    if not character:
+        characters = await db.characters.aggregate([{"$sample": {"size": 1}}]).to_list(1)
+        if characters:
+            character = characters[0]
+            character.pop("_id", None)
+    
+    if not character:
+        return {"message": "No character found", "send": False}
+    
+    # Pick message based on type
+    if notification_type == "inactivity":
+        message = random.choice(INACTIVITY_MESSAGES)
+    else:
+        message = random.choice(LONELY_MESSAGES)
+    
+    # Personalize with character name
+    notification = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "character_id": character.get("id"),
+        "character_name": character.get("name"),
+        "character_avatar": character.get("avatar_url"),
+        "title": character.get("name"),
+        "body": message,
+        "icon": character.get("avatar_url"),
+        "tag": f"lonely-{character.get('id')}",
+        "data": {
+            "url": f"/chat/{character.get('id')}",
+            "character_id": character.get("id"),
+            "type": notification_type
+        }
+    }
+    
+    # Record the notification
+    await db.sent_notifications.insert_one({
+        "user_id": user_id,
+        "character_id": character.get("id"),
+        "message": message,
+        "date": today,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "type": notification_type,
+        "source": character_source
+    })
+    
+    return {"notification": notification, "send": True}
+
+@api_router.get("/push/check-inactivity")
+async def check_user_inactivity():
+    """Check for inactive users and return list for notifications (admin/cron endpoint)"""
+    
+    # Find users inactive for more than 4 hours
+    threshold = datetime.now(timezone.utc) - timedelta(hours=4)
+    
+    inactive_users = await db.users.find({
+        "last_active": {"$lt": threshold.isoformat()}
+    }, {"_id": 0, "id": 1, "user_id": 1}).to_list(100)
+    
+    # Filter to only users with active push subscriptions
+    result = []
+    for user in inactive_users:
+        uid = user.get("id") or user.get("user_id")
+        sub = await db.push_subscriptions.find_one({"user_id": uid, "is_active": True})
+        if sub:
+            result.append(uid)
+    
+    return {"inactive_users": result}
+
+@api_router.get("/push/notification-history/{user_id}")
+async def get_notification_history(user_id: str, limit: int = 20):
+    """Get user's notification history"""
+    history = await db.sent_notifications.find(
+        {"user_id": user_id},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(limit).to_list(limit)
+    
+    return {"history": history}
+
 # ============ FAVORITES / COLLECTION ROUTES ============
 
 @api_router.post("/favorites/add")
