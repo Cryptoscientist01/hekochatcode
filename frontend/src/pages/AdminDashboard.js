@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { 
   Shield, Users, MessageCircle, Image as ImageIcon, Heart, Sparkles,
   Settings, LogOut, Trash2, Search, ChevronLeft, ChevronRight,
-  BarChart3, TrendingUp, Calendar, User, Lock, Mail, Eye, Save
+  BarChart3, TrendingUp, Calendar, User, Lock, Mail, Eye, Save, FileText
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
