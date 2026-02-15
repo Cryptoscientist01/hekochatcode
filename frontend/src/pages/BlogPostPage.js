@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { toast } from "sonner";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
