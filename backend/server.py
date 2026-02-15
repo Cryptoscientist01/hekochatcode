@@ -5,6 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import random
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
@@ -17,6 +18,7 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.llm.openai import OpenAITextToSpeech
 import base64
 import asyncio
+import json
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -28,6 +30,8 @@ db = client[os.environ['DB_NAME']]
 
 EMERGENT_LLM_KEY = os.getenv('EMERGENT_LLM_KEY')
 JWT_SECRET = os.getenv('JWT_SECRET', 'your-secret-key-change-in-production')
+VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY', '')
 
 # Create the main app without a prefix
 app = FastAPI()
