@@ -1582,6 +1582,7 @@ async def admin_flag_chat(request: Request, chat_id: str, reason: str, message_i
     }
     
     await db.chat_flags.insert_one(flag)
+    flag.pop("_id", None)
     await log_admin_activity(admin['id'], admin['email'], "flag_chat", "chat", chat_id, reason)
     
     return {"message": "Chat flagged", "flag_id": flag['id']}
