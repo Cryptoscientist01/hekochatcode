@@ -1474,7 +1474,15 @@ async def get_admin_from_token(request: Request):
     if not admin:
         raise HTTPException(status_code=401, detail="Admin not found")
     
-    return admin
+    # Convert datetime objects to strings
+    result = {}
+    for key, value in admin.items():
+        if isinstance(value, datetime):
+            result[key] = value.isoformat()
+        else:
+            result[key] = value
+    
+    return result
 
 # ============ 1. CONTENT MODERATION ============
 
