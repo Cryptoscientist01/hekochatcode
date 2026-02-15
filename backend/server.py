@@ -567,10 +567,262 @@ async def init_characters():
         await db.characters.insert_many(default_characters)
         logging.info(f"Initialized {len(default_characters)} default characters")
 
+# ============ NOTIFICATION SCHEDULER ============
+
+async def send_push_notification(subscription_info, notification_data):
+    """Send a push notification to a user"""
+    try:
+        if not VAPID_PRIVATE_KEY or VAPID_PRIVATE_KEY == '':
+            # No VAPID keys configured - log and skip
+            logging.info(f"Push notification skipped (no VAPID keys): {notification_data.get('title')}")
+            return False
+        
+        webpush(
+            subscription_info=subscription_info,
+            data=json.dumps(notification_data),
+            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_claims={"sub": f"mailto:{VAPID_CLAIMS_EMAIL}"}
+        )
+        return True
+    except WebPushException as e:
+        logging.error(f"Push notification failed: {e}")
+        # If subscription is invalid, mark it inactive
+        if e.response and e.response.status_code in [404, 410]:
+            await db.push_subscriptions.update_one(
+                {"endpoint": subscription_info.get("endpoint")},
+                {"$set": {"is_active": False}}
+            )
+        return False
+    except Exception as e:
+        logging.error(f"Push notification error: {e}")
+        return False
+
+async def send_random_notifications():
+    """Send random notifications to subscribed users (runs every 2 hours)"""
+    logging.info("Running random notification job...")
+    
+    try:
+        # Get all active subscriptions
+        subscriptions = await db.push_subscriptions.find({"is_active": True}).to_list(1000)
+        
+        # Randomly select ~30% of users to send notifications to
+        selected = random.sample(subscriptions, min(len(subscriptions), max(1, len(subscriptions) // 3)))
+        
+        sent_count = 0
+        for sub in selected:
+            user_id = sub.get("user_id")
+            
+            # Check preferences and limits
+            prefs = await db.notification_preferences.find_one({"user_id": user_id})
+            if prefs and not prefs.get("enabled", True):
+                continue
+            
+            # Check quiet hours
+            current_hour = datetime.now(timezone.utc).hour
+            quiet_start = prefs.get("quiet_hours_start", 22) if prefs else 22
+            quiet_end = prefs.get("quiet_hours_end", 8) if prefs else 8
+            
+            if quiet_start > quiet_end:
+                if current_hour >= quiet_start or current_hour < quiet_end:
+                    continue
+            else:
+                if quiet_start <= current_hour < quiet_end:
+                    continue
+            
+            # Check daily limit
+            today = datetime.now(timezone.utc).date().isoformat()
+            daily_count = await db.sent_notifications.count_documents({
+                "user_id": user_id,
+                "date": today
+            })
+            
+            frequency = prefs.get("frequency", "medium") if prefs else "medium"
+            max_daily = {"low": 2, "medium": 5, "high": 8}.get(frequency, 5)
+            
+            if daily_count >= max_daily:
+                continue
+            
+            # Generate notification
+            # Pick a character the user has chatted with or random
+            character = None
+            recent_chats = await db.messages.aggregate([
+                {"$match": {"chat_id": {"$regex": f"^{user_id}_"}}},
+                {"$group": {"_id": {"$arrayElemAt": [{"$split": ["$chat_id", "_"]}, 1]}}},
+                {"$sample": {"size": 1}}
+            ]).to_list(1)
+            
+            if recent_chats:
+                char_id = recent_chats[0]["_id"]
+                character = await db.characters.find_one({"id": char_id}, {"_id": 0})
+            
+            if not character:
+                chars = await db.characters.aggregate([{"$sample": {"size": 1}}]).to_list(1)
+                if chars:
+                    character = chars[0]
+                    character.pop("_id", None)
+            
+            if not character:
+                continue
+            
+            message = random.choice(LONELY_MESSAGES)
+            
+            notification_data = {
+                "title": character.get("name"),
+                "body": message,
+                "icon": character.get("avatar_url"),
+                "tag": f"lonely-{character.get('id')}",
+                "data": {
+                    "url": f"/chat/{character.get('id')}",
+                    "character_id": character.get("id")
+                }
+            }
+            
+            # Send push notification
+            subscription_info = {
+                "endpoint": sub.get("endpoint"),
+                "keys": sub.get("keys", {})
+            }
+            
+            success = await send_push_notification(subscription_info, notification_data)
+            
+            if success:
+                # Record the notification
+                await db.sent_notifications.insert_one({
+                    "user_id": user_id,
+                    "character_id": character.get("id"),
+                    "message": message,
+                    "date": today,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "type": "random",
+                    "delivered": True
+                })
+                sent_count += 1
+        
+        logging.info(f"Random notifications sent: {sent_count}/{len(selected)}")
+    except Exception as e:
+        logging.error(f"Random notification job error: {e}")
+
+async def send_inactivity_notifications():
+    """Send notifications to inactive users (runs every 4 hours)"""
+    logging.info("Running inactivity notification job...")
+    
+    try:
+        # Find users inactive for more than 6 hours
+        threshold = datetime.now(timezone.utc) - timedelta(hours=6)
+        
+        inactive_users = await db.users.find({
+            "last_active": {"$lt": threshold.isoformat()}
+        }, {"_id": 0, "id": 1, "user_id": 1}).to_list(500)
+        
+        sent_count = 0
+        for user in inactive_users:
+            user_id = user.get("id") or user.get("user_id")
+            
+            # Check if user has active push subscription
+            sub = await db.push_subscriptions.find_one({"user_id": user_id, "is_active": True})
+            if not sub:
+                continue
+            
+            # Check if we already sent an inactivity notification today
+            today = datetime.now(timezone.utc).date().isoformat()
+            existing = await db.sent_notifications.find_one({
+                "user_id": user_id,
+                "date": today,
+                "type": "inactivity"
+            })
+            if existing:
+                continue
+            
+            # Check preferences
+            prefs = await db.notification_preferences.find_one({"user_id": user_id})
+            if prefs and not prefs.get("enabled", True):
+                continue
+            
+            # Pick a character
+            character = None
+            recent_chats = await db.messages.aggregate([
+                {"$match": {"chat_id": {"$regex": f"^{user_id}_"}}},
+                {"$group": {"_id": {"$arrayElemAt": [{"$split": ["$chat_id", "_"]}, 1]}}},
+                {"$sample": {"size": 1}}
+            ]).to_list(1)
+            
+            if recent_chats:
+                char_id = recent_chats[0]["_id"]
+                character = await db.characters.find_one({"id": char_id}, {"_id": 0})
+            
+            if not character:
+                chars = await db.characters.aggregate([{"$sample": {"size": 1}}]).to_list(1)
+                if chars:
+                    character = chars[0]
+                    character.pop("_id", None)
+            
+            if not character:
+                continue
+            
+            message = random.choice(INACTIVITY_MESSAGES)
+            
+            notification_data = {
+                "title": character.get("name"),
+                "body": message,
+                "icon": character.get("avatar_url"),
+                "tag": f"inactivity-{character.get('id')}",
+                "data": {
+                    "url": f"/chat/{character.get('id')}",
+                    "character_id": character.get("id"),
+                    "type": "inactivity"
+                }
+            }
+            
+            subscription_info = {
+                "endpoint": sub.get("endpoint"),
+                "keys": sub.get("keys", {})
+            }
+            
+            success = await send_push_notification(subscription_info, notification_data)
+            
+            if success:
+                await db.sent_notifications.insert_one({
+                    "user_id": user_id,
+                    "character_id": character.get("id"),
+                    "message": message,
+                    "date": today,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "type": "inactivity",
+                    "delivered": True
+                })
+                sent_count += 1
+        
+        logging.info(f"Inactivity notifications sent: {sent_count}/{len(inactive_users)}")
+    except Exception as e:
+        logging.error(f"Inactivity notification job error: {e}")
+
+def start_notification_scheduler():
+    """Initialize and start the notification scheduler"""
+    # Random notifications every 2 hours
+    scheduler.add_job(
+        send_random_notifications,
+        IntervalTrigger(hours=2),
+        id="random_notifications",
+        replace_existing=True
+    )
+    
+    # Inactivity notifications every 4 hours
+    scheduler.add_job(
+        send_inactivity_notifications,
+        IntervalTrigger(hours=4),
+        id="inactivity_notifications",
+        replace_existing=True
+    )
+    
+    scheduler.start()
+    logging.info("Notification scheduler started")
+
 @app.on_event("startup")
 async def startup_event():
     await init_characters()
     await init_admin()
+    start_notification_scheduler()
+    logging.info("Application startup complete with notification scheduler")
 
 # Auth Routes
 @api_router.post("/auth/signup")
