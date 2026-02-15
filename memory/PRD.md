@@ -193,6 +193,15 @@ Build a fully functional AI companion web app similar to candy.ai with features 
 - `GET /api/push/check-inactivity` - Get list of inactive users
 - `GET /api/push/notification-history/{user_id}` - Get sent notification history
 
+### Key Payment API Endpoints
+- `GET /api/payments/plans` - Get all subscription plans
+- `POST /api/payments/checkout` - Create checkout session (Stripe/PayPal)
+- `GET /api/payments/status/{session_id}` - Get payment status
+- `GET /api/payments/user-subscription` - Get current user's subscription
+- `GET /api/payments/history` - Get user's payment history
+- `POST /api/payments/paypal-confirm` - Confirm PayPal mock payment
+- `POST /api/webhook/stripe` - Stripe webhook handler
+
 ### Key Admin API Endpoints (New)
 - `GET /api/admin/analytics/chats` - Chat analytics (active users, popular characters)
 - `GET /api/admin/analytics/revenue` - Revenue dashboard (MOCKED)
