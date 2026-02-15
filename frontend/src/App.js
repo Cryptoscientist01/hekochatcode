@@ -75,7 +75,7 @@ function AuthCallback({ onAuth }) {
   );
 }
 
-function AppRouter({ user, setUser, setToken }) {
+function AppRouter({ user, setUser, setToken, admin, setAdmin, adminToken, setAdminToken }) {
   const location = useLocation();
 
   const handleAuth = (authToken, authUser) => {
@@ -98,6 +98,20 @@ function AppRouter({ user, setUser, setToken }) {
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+  };
+
+  const handleAdminLogin = (adminData, token) => {
+    setAdmin(adminData);
+    setAdminToken(token);
+    localStorage.setItem('admin', JSON.stringify(adminData));
+    localStorage.setItem('admin_token', token);
+  };
+
+  const handleAdminLogout = () => {
+    setAdmin(null);
+    setAdminToken(null);
+    localStorage.removeItem('admin');
+    localStorage.removeItem('admin_token');
   };
 
   // Check URL fragment for session_id (Google OAuth callback)
@@ -173,6 +187,48 @@ function AppRouter({ user, setUser, setToken }) {
         path="/settings" 
         element={
           user ? <SettingsPage user={user} onLogout={handleLogout} /> : <Navigate to="/auth" />
+        } 
+      />
+      
+      {/* Blog Routes - Public & SEO Friendly */}
+      <Route path="/blog" element={<BlogPage />} />
+      <Route path="/blog/:slug" element={<BlogPostPage />} />
+      
+      {/* Admin Routes */}
+      <Route 
+        path="/optimus" 
+        element={
+          adminToken ? <Navigate to="/optimus/dashboard" /> : <AdminLoginPage onAdminLogin={handleAdminLogin} />
+        } 
+      />
+      <Route 
+        path="/optimus/dashboard" 
+        element={
+          adminToken ? (
+            <AdminDashboard admin={admin} adminToken={adminToken} onAdminLogout={handleAdminLogout} />
+          ) : (
+            <Navigate to="/optimus" />
+          )
+        } 
+      />
+      <Route 
+        path="/optimus/blog" 
+        element={
+          adminToken ? (
+            <AdminBlogEditor adminToken={adminToken} />
+          ) : (
+            <Navigate to="/optimus" />
+          )
+        } 
+      />
+      <Route 
+        path="/optimus/blog/:postId" 
+        element={
+          adminToken ? (
+            <AdminBlogEditor adminToken={adminToken} />
+          ) : (
+            <Navigate to="/optimus" />
+          )
         } 
       />
     </Routes>
