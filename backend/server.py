@@ -796,6 +796,35 @@ async def get_user_chats(user_id: str):
     
     return {"chats": result}
 
+@api_router.delete("/chat/clear-all")
+async def clear_all_chats(user_id: str):
+    """Clear all chat history for a user"""
+    result = await db.messages.delete_many({"chat_id": {"$regex": f"^{user_id}_"}})
+    return {"message": f"Deleted {result.deleted_count} messages", "deleted_count": result.deleted_count}
+
+@api_router.delete("/users/{user_id}/delete-account")
+async def delete_user_account(user_id: str):
+    """Delete user account and all associated data"""
+    # Delete all user's messages
+    await db.messages.delete_many({"chat_id": {"$regex": f"^{user_id}_"}})
+    
+    # Delete user's favorites
+    await db.favorites.delete_many({"user_id": user_id})
+    
+    # Delete user's custom characters
+    await db.custom_characters.delete_many({"user_id": user_id})
+    
+    # Delete user's generated images
+    await db.generated_images.delete_many({"user_id": user_id})
+    
+    # Delete user sessions
+    await db.user_sessions.delete_many({"user_id": user_id})
+    
+    # Delete user account
+    await db.users.delete_one({"$or": [{"id": user_id}, {"user_id": user_id}]})
+    
+    return {"message": "Account and all data deleted successfully"}
+
 # Voice Routes
 @api_router.post("/voice/generate")
 async def generate_voice(request: VoiceGenerateRequest):
