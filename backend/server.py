@@ -762,6 +762,229 @@ async def generate_image(request: ImageGenerateRequest):
         logging.error(f"Image generation error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============ FAVORITES / COLLECTION ROUTES ============
+
+@api_router.post("/favorites/add")
+async def add_favorite(request: FavoriteRequest):
+    """Add a character to user's favorites"""
+    # Check if already favorited
+    existing = await db.favorites.find_one({
+        "user_id": request.user_id,
+        "character_id": request.character_id
+    })
+    
+    if existing:
+        return {"message": "Already in favorites", "favorited": True}
+    
+    await db.favorites.insert_one({
+        "user_id": request.user_id,
+        "character_id": request.character_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {"message": "Added to favorites", "favorited": True}
+
+@api_router.post("/favorites/remove")
+async def remove_favorite(request: FavoriteRequest):
+    """Remove a character from user's favorites"""
+    await db.favorites.delete_one({
+        "user_id": request.user_id,
+        "character_id": request.character_id
+    })
+    
+    return {"message": "Removed from favorites", "favorited": False}
+
+@api_router.get("/favorites/{user_id}")
+async def get_favorites(user_id: str):
+    """Get all favorite characters for a user"""
+    favorites = await db.favorites.find({"user_id": user_id}, {"_id": 0}).to_list(100)
+    
+    # Get character details for each favorite
+    result = []
+    for fav in favorites:
+        # Check both regular characters and custom characters
+        character = await db.characters.find_one({"id": fav["character_id"]}, {"_id": 0})
+        if not character:
+            character = await db.custom_characters.find_one({"id": fav["character_id"]}, {"_id": 0})
+        
+        if character:
+            result.append({
+                **character,
+                "favorited_at": fav.get("created_at")
+            })
+    
+    return {"favorites": result}
+
+@api_router.get("/favorites/check/{user_id}/{character_id}")
+async def check_favorite(user_id: str, character_id: str):
+    """Check if a character is in user's favorites"""
+    existing = await db.favorites.find_one({
+        "user_id": user_id,
+        "character_id": character_id
+    })
+    
+    return {"favorited": existing is not None}
+
+# ============ CUSTOM CHARACTER ROUTES ============
+
+@api_router.post("/characters/create")
+async def create_custom_character(request: CreateCharacterRequest):
+    """Create a custom AI character"""
+    
+    # Generate avatar using AI if prompt provided, otherwise use placeholder
+    avatar_url = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400"
+    
+    if request.avatar_prompt:
+        try:
+            chat = LlmChat(
+                api_key=EMERGENT_LLM_KEY,
+                session_id=f"avatar_{uuid.uuid4()}",
+                system_message="You are an AI image generator specializing in character avatars."
+            )
+            chat.with_model("gemini", "gemini-3-pro-image-preview").with_params(modalities=["image", "text"])
+            
+            msg = UserMessage(text=f"Generate a portrait avatar image: {request.avatar_prompt}. Style: professional, high quality, centered face portrait.")
+            text, images = await chat.send_message_multimodal_response(msg)
+            
+            if images and len(images) > 0:
+                # Store as base64 data URL
+                avatar_url = f"data:{images[0]['mime_type']};base64,{images[0]['data']}"
+        except Exception as e:
+            logging.error(f"Avatar generation error: {e}")
+            # Use placeholder if generation fails
+    
+    character_id = str(uuid.uuid4())
+    custom_character = {
+        "id": character_id,
+        "user_id": request.user_id,
+        "name": request.name,
+        "age": request.age,
+        "personality": request.personality,
+        "traits": request.traits,
+        "category": "Custom",
+        "avatar_url": avatar_url,
+        "description": request.description,
+        "occupation": request.occupation,
+        "is_custom": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.custom_characters.insert_one(custom_character)
+    
+    # Remove _id before returning
+    custom_character.pop("_id", None)
+    
+    return {"character": custom_character, "message": "Character created successfully"}
+
+@api_router.get("/characters/my/{user_id}")
+async def get_my_characters(user_id: str):
+    """Get all custom characters created by a user"""
+    characters = await db.custom_characters.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"characters": characters}
+
+@api_router.delete("/characters/custom/{character_id}")
+async def delete_custom_character(character_id: str, user_id: str):
+    """Delete a custom character"""
+    result = await db.custom_characters.delete_one({
+        "id": character_id,
+        "user_id": user_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Character not found or not authorized")
+    
+    # Also remove from favorites
+    await db.favorites.delete_many({"character_id": character_id})
+    
+    return {"message": "Character deleted successfully"}
+
+@api_router.get("/characters/custom/{character_id}")
+async def get_custom_character(character_id: str):
+    """Get a single custom character by ID"""
+    character = await db.custom_characters.find_one({"id": character_id}, {"_id": 0})
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+    return character
+
+# ============ STANDALONE IMAGE GENERATION ROUTES ============
+
+@api_router.post("/images/generate")
+async def generate_standalone_image(request: StandaloneImageRequest):
+    """Generate a standalone AI image"""
+    
+    style_prompts = {
+        "realistic": "photorealistic, high quality, detailed",
+        "anime": "anime style, vibrant colors, detailed illustration",
+        "artistic": "artistic, creative, painterly style",
+        "fantasy": "fantasy art, magical, ethereal lighting"
+    }
+    
+    style_modifier = style_prompts.get(request.style, style_prompts["realistic"])
+    enhanced_prompt = f"{request.prompt}. Style: {style_modifier}"
+    
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=f"standalone_image_{uuid.uuid4()}",
+        system_message="You are an AI image generator."
+    )
+    chat.with_model("gemini", "gemini-3-pro-image-preview").with_params(modalities=["image", "text"])
+    
+    msg = UserMessage(text=enhanced_prompt)
+    
+    try:
+        text, images = await chat.send_message_multimodal_response(msg)
+        
+        if images and len(images) > 0:
+            image_data = images[0]['data']
+            mime_type = images[0]['mime_type']
+            
+            # Save to database
+            image_record = {
+                "id": str(uuid.uuid4()),
+                "user_id": request.user_id,
+                "prompt": request.prompt,
+                "image_data": image_data,
+                "mime_type": mime_type,
+                "style": request.style,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.generated_images.insert_one(image_record)
+            
+            return {
+                "id": image_record["id"],
+                "image": image_data,
+                "mime_type": mime_type,
+                "prompt": request.prompt
+            }
+        else:
+            raise HTTPException(status_code=500, detail="No image generated")
+    except Exception as e:
+        logging.error(f"Standalone image generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/images/my/{user_id}")
+async def get_my_images(user_id: str):
+    """Get all images generated by a user"""
+    images = await db.generated_images.find(
+        {"user_id": user_id}, 
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    
+    return {"images": images}
+
+@api_router.delete("/images/{image_id}")
+async def delete_image(image_id: str, user_id: str):
+    """Delete a generated image"""
+    result = await db.generated_images.delete_one({
+        "id": image_id,
+        "user_id": user_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Image not found or not authorized")
+    
+    return {"message": "Image deleted successfully"}
+
 app.include_router(api_router)
 
 app.add_middleware(
