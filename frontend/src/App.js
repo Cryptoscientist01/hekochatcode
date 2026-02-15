@@ -238,6 +238,8 @@ function AppRouter({ user, setUser, setToken, admin, setAdmin, adminToken, setAd
 function App() {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [admin, setAdmin] = useState(null);
+  const [adminToken, setAdminToken] = useState(null);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
@@ -246,13 +248,29 @@ function App() {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
     }
+    
+    // Load admin session
+    const storedAdminToken = localStorage.getItem('admin_token');
+    const storedAdmin = localStorage.getItem('admin');
+    if (storedAdminToken && storedAdmin) {
+      setAdminToken(storedAdminToken);
+      setAdmin(JSON.parse(storedAdmin));
+    }
   }, []);
 
   return (
     <SettingsProvider>
       <div className="App min-h-screen bg-background">
         <BrowserRouter>
-          <AppRouter user={user} setUser={setUser} setToken={setToken} />
+          <AppRouter 
+            user={user} 
+            setUser={setUser} 
+            setToken={setToken}
+            admin={admin}
+            setAdmin={setAdmin}
+            adminToken={adminToken}
+            setAdminToken={setAdminToken}
+          />
         </BrowserRouter>
         <Toaster />
       </div>
