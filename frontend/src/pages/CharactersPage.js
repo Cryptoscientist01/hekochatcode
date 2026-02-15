@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, User, Sparkles, MessageCircle, ChevronDown, Clock, Menu, Home, Compass, Image as ImageIcon, Wand2, HeartHandshake, Crown, X, FolderHeart, LogOut, Settings, CreditCard } from "lucide-react";
+import { Heart, User, Sparkles, MessageCircle, ChevronDown, Clock, Menu, Home, Compass, Image as ImageIcon, Wand2, HeartHandshake, Crown, X, FolderHeart, LogOut, Settings, CreditCard, Bell } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { toast } from "sonner";
+import NotificationPrompt, { NotificationBell } from "@/components/NotificationPrompt";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -21,6 +22,9 @@ export default function CharactersPage({ user, onLogout }) {
   const [loadingChats, setLoadingChats] = useState(false);
   const dropdownRef = useRef(null);
   const sideMenuRef = useRef(null);
+  
+  // Get token from localStorage
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
     if (urlCategory) {
