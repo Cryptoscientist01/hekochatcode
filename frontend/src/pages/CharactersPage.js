@@ -450,6 +450,9 @@ export default function CharactersPage({ user, onLogout }) {
           )}
         </div>
       </div>
+      
+      {/* Notification prompt */}
+      <NotificationPrompt user={user} token={token} />
     </div>
   );
 }
