@@ -188,7 +188,7 @@ export default function SettingsPage({ user, onLogout }) {
                 <SettingToggle
                   testId="toggle-theme"
                   enabled={settings.theme === 'dark'}
-                  onToggle={() => updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark')}
+                  onToggle={() => handleSettingChange('theme', settings.theme === 'dark' ? 'light' : 'dark')}
                 />
               </SettingRow>
 
@@ -201,7 +201,7 @@ export default function SettingsPage({ user, onLogout }) {
                 <SettingToggle
                   testId="toggle-compact"
                   enabled={settings.compactMode}
-                  onToggle={() => updateSetting('compactMode', !settings.compactMode)}
+                  onToggle={() => handleSettingChange('compactMode', !settings.compactMode)}
                 />
               </SettingRow>
 
@@ -214,7 +214,7 @@ export default function SettingsPage({ user, onLogout }) {
                 <select
                   data-testid="language-select"
                   value={settings.language}
-                  onChange={(e) => updateSetting('language', e.target.value)}
+                  onChange={(e) => handleSettingChange('language', e.target.value)}
                   className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary"
                 >
                   <option value="en">English</option>
