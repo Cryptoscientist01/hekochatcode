@@ -86,8 +86,9 @@ class TestChatAnalytics:
         data = response.json()
         assert "most_popular_characters" in data
         assert "most_active_users" in data
-        assert "total_chats" in data
-        assert "messages_today" in data
+        assert "total_messages" in data
+        assert "average_messages_per_user" in data
+        assert "messages_by_day" in data
         
         # Verify popular characters structure
         if len(data["most_popular_characters"]) > 0:
@@ -100,7 +101,7 @@ class TestChatAnalytics:
             user = data["most_active_users"][0]
             assert "message_count" in user
         
-        print(f"Chat Analytics: {data['total_chats']} total chats, {len(data['most_popular_characters'])} popular chars")
+        print(f"Chat Analytics: {data['total_messages']} total msgs, {len(data['most_popular_characters'])} popular chars")
     
     def test_chat_analytics_requires_auth(self):
         """Test that chat analytics requires authentication"""
@@ -222,8 +223,15 @@ class TestAnnouncements:
         assert response.status_code == 200
         
         data = response.json()
-        assert data["announcement"]["title"] == update_data["title"]
-        assert data["announcement"]["type"] == "warning"
+        assert "message" in data  # Response contains a success message
+        
+        # Verify update by fetching all announcements
+        get_response = requests.get(f"{BASE_URL}/api/admin/announcements", headers=auth_headers)
+        announcements = get_response.json().get("announcements", [])
+        updated = next((a for a in announcements if a["id"] == announcement_id), None)
+        assert updated is not None
+        assert updated["title"] == update_data["title"]
+        assert updated["type"] == "warning"
         
         print(f"Updated announcement: {announcement_id}")
         
