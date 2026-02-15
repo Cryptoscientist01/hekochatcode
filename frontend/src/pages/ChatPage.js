@@ -209,14 +209,17 @@ export default function ChatPage({ user, onLogout }) {
             </div>
           </div>
           
-          <Button
-            data-testid="logout-btn"
-            onClick={onLogout}
-            variant="outline"
-            className="border-white/20 text-white hover:bg-white/10 rounded-full px-6"
-          >
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              data-testid="favorite-btn"
+              onClick={toggleFavorite}
+              variant="ghost"
+              size="icon"
+              className={`rounded-full ${isFavorited ? 'text-primary' : 'text-white/50 hover:text-primary'}`}
+            >
+              <Heart className="w-5 h-5" fill={isFavorited ? "#FF0080" : "none"} />
+            </Button>
+          </div>
         </div>
       </nav>
 
