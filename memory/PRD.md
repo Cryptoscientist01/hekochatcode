@@ -155,6 +155,18 @@ Build a fully functional AI companion web app similar to candy.ai with features 
   - Draft/Published status management
   - Sitemap XML endpoint at `/api/sitemap.xml`
 
+- [x] **AI Character Push Notifications**:
+  - Service worker for browser push notifications
+  - Notification bell icon in header
+  - Settings toggle for AI character notifications
+  - Flirty message templates (30+ messages)
+  - Character prioritization: chatted with > favorites > random
+  - Frequency settings: low (1-2/day), medium (3-5/day), high (5+/day)
+  - Quiet hours: 10PM-8AM by default
+  - Inactivity detection (4+ hours)
+  - Notification history tracking
+  - Backend endpoints for push subscription, preferences, generation
+
 ### Key Admin API Endpoints (New)
 - `GET /api/admin/analytics/chats` - Chat analytics (active users, popular characters)
 - `GET /api/admin/analytics/revenue` - Revenue dashboard (MOCKED)
