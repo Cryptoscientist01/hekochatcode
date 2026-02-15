@@ -311,7 +311,7 @@ export default function ChatPage({ user, onLogout }) {
             </motion.div>
           ))}
           
-          {loading && (
+          {loading && settings.showTypingIndicator && (
             <div className="flex justify-start">
               <div className="glass-heavy p-4 rounded-2xl rounded-tl-sm">
                 <div className="flex gap-2">
