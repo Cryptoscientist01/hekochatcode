@@ -188,12 +188,14 @@ function App() {
   }, []);
 
   return (
-    <div className="App min-h-screen bg-background">
-      <BrowserRouter>
-        <AppRouter user={user} setUser={setUser} setToken={setToken} />
-      </BrowserRouter>
-      <Toaster />
-    </div>
+    <SettingsProvider>
+      <div className="App min-h-screen bg-background">
+        <BrowserRouter>
+          <AppRouter user={user} setUser={setUser} setToken={setToken} />
+        </BrowserRouter>
+        <Toaster />
+      </div>
+    </SettingsProvider>
   );
 }
 
