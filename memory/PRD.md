@@ -155,6 +155,23 @@ Build a fully functional AI companion web app similar to candy.ai with features 
   - Draft/Published status management
   - Sitemap XML endpoint at `/api/sitemap.xml`
 
+### Key Admin API Endpoints (New)
+- `GET /api/admin/analytics/chats` - Chat analytics (active users, popular characters)
+- `GET /api/admin/analytics/revenue` - Revenue dashboard (MOCKED)
+- `GET /api/admin/chats` - Get all chats for moderation
+- `GET /api/admin/chats/{id}/messages` - Get messages in a chat
+- `DELETE /api/admin/chats/{id}` - Delete entire chat
+- `POST /api/admin/chats/flag` - Flag a chat for review
+- `GET/POST/PUT/DELETE /api/admin/announcements` - CRUD announcements
+- `GET/POST /api/admin/notifications` - Get/send notifications
+- `GET/POST/DELETE /api/admin/admins` - Manage admin accounts
+- `PUT /api/admin/admins/{id}/role` - Update admin role
+- `GET /api/admin/activity-logs` - Get activity logs
+- `GET /api/admin/activity-logs/summary` - Get activity summary
+- `PUT /api/admin/characters/{id}` - Edit character details
+- `GET /api/announcements/active` - Public active announcements
+- `GET /api/notifications/{user_id}` - Get user notifications
+
 ### Key Blog API Endpoints
 - `GET /api/blog/posts` - Get published posts (public)
 - `GET /api/blog/posts/{slug}` - Get single post by slug (public)
