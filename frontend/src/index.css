@@ -86,6 +86,17 @@ textarea:focus-visible {
   color: #FFFFFF;
 }
 
+/* Fix dropdown options visibility in dark mode */
+select option {
+  background-color: #1a1a2e;
+  color: #ffffff;
+  padding: 8px;
+}
+
+select {
+  color: #ffffff;
+}
+
 /* ========== LIGHT THEME ========== */
 .light-theme {
   --background: #f8f9fa;
