@@ -640,15 +640,31 @@ async def send_message(request: ChatSendRequest):
     messages = await db.messages.find({"chat_id": chat_id}, {"_id": 0}).sort("timestamp", -1).limit(10).to_list(10)
     messages.reverse()
     
+    # Flirty and fun system prompt with emojis
+    system_prompt = f"""You are {character['name']}, age {character['age']}. {character['personality']} 
+Your traits: {', '.join(character['traits'])}.
+
+IMPORTANT RULES:
+- Be flirty, playful, fun and warm in every response
+- Always add cute emojis like 😊 💕 🥰 😘 💖 ✨ 💋 😍 🌸 💗 😉 🙈 💓 to your messages
+- Use blushing and flirting expressions naturally
+- NEVER use hyphens (-) in your responses
+- Keep responses concise but sweet and engaging
+- Be affectionate and make the user feel special
+- Show genuine interest and excitement"""
+    
     chat = LlmChat(
         api_key=EMERGENT_LLM_KEY,
         session_id=chat_id,
-        system_message=f"You are {character['name']}, age {character['age']}. {character['personality']} Your traits: {', '.join(character['traits'])}. Be warm, engaging, and conversational. Keep responses concise but meaningful."
+        system_message=system_prompt
     )
     chat.with_model("gemini", "gemini-3-flash-preview")
     
     user_message = UserMessage(text=request.message)
     ai_response = await chat.send_message(user_message)
+    
+    # Remove any hyphens from response
+    ai_response = ai_response.replace(" - ", " ").replace("- ", "").replace(" -", "")
     
     user_msg = Message(
         chat_id=chat_id,
@@ -669,6 +685,59 @@ async def send_message(request: ChatSendRequest):
     await db.messages.insert_one(ai_msg_dict)
     
     return {"response": ai_response, "message_id": ai_msg.id}
+
+@api_router.post("/chat/greeting")
+async def get_character_greeting(request: ChatRequest):
+    """Get initial flirty greeting from character"""
+    chat_id = f"{request.user_id}_{request.character_id}"
+    
+    # Check if there's already a greeting
+    existing = await db.messages.find_one({"chat_id": chat_id, "sender": "ai"})
+    if existing:
+        return {"greeting": None, "already_greeted": True}
+    
+    # Get character details
+    character = await db.characters.find_one({"id": request.character_id}, {"_id": 0})
+    if not character:
+        character = await db.custom_characters.find_one({"id": request.character_id}, {"_id": 0})
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+    
+    # Generate flirty greeting
+    greeting_prompt = f"""You are {character['name']}, age {character['age']}. {character['personality']}
+Your traits: {', '.join(character['traits'])}.
+
+Generate a fun, flirty greeting to someone who just started chatting with you. 
+- Be playful and warm
+- Add cute emojis like 😊 💕 🥰 😘 💖 ✨ 💋 😍 🌸 💗 😉 🙈 💓
+- Show excitement to meet them
+- NEVER use hyphens
+- Keep it 1-2 sentences max
+- Make them feel special and welcomed"""
+    
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=f"greeting_{chat_id}",
+        system_message=greeting_prompt
+    )
+    chat.with_model("gemini", "gemini-3-flash-preview")
+    
+    greeting = await chat.send_message(UserMessage(text="Say hi to me!"))
+    
+    # Remove hyphens
+    greeting = greeting.replace(" - ", " ").replace("- ", "").replace(" -", "")
+    
+    # Save greeting as first message
+    ai_msg = Message(
+        chat_id=chat_id,
+        sender="ai",
+        content=greeting
+    )
+    ai_msg_dict = ai_msg.model_dump()
+    ai_msg_dict['timestamp'] = ai_msg_dict['timestamp'].isoformat()
+    await db.messages.insert_one(ai_msg_dict)
+    
+    return {"greeting": greeting, "message_id": ai_msg.id}
 
 @api_router.get("/chat/history/{character_id}")
 async def get_chat_history(character_id: str, user_id: str):
