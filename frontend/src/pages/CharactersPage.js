@@ -308,7 +308,10 @@ export default function CharactersPage({ user, onLogout }) {
               </button>
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {/* Notification Bell */}
+              <NotificationBell user={user} token={token} />
+              
               <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl glass-light">
                 <User className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium text-text-secondary">{user.username || user.name || user.email}</span>
