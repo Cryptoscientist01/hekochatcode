@@ -13,6 +13,7 @@ import SubscriptionPage from "./pages/SubscriptionPage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
 import { Toaster } from "@/components/ui/sonner";
+import { SettingsProvider } from "./context/SettingsContext";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
