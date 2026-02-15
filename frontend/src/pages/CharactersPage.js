@@ -222,15 +222,34 @@ export default function CharactersPage({ user, onLogout }) {
                   <span className="font-medium">My AI</span>
                 </button>
 
-                <div className="pt-4 border-t border-white/10 mt-4">
+                {/* Divider and Premium/Account Section */}
+                <div className="pt-4 border-t border-white/10 mt-4 space-y-2">
                   <button
-                    data-testid="menu-premium"
-                    onClick={() => { toast.info("Premium features coming soon!"); }}
+                    data-testid="menu-subscription"
+                    onClick={() => { navigate('/subscription'); setShowSideMenu(false); }}
                     className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 hover:from-amber-500/30 hover:to-orange-500/30 transition-all text-left group"
                   >
                     <Crown className="w-5 h-5 text-amber-400" />
-                    <span className="font-medium text-amber-400">Premium</span>
-                    <span className="ml-auto px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full">70% OFF</span>
+                    <span className="font-medium text-amber-400">Subscription</span>
+                    <span className="ml-auto px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full">50% OFF</span>
+                  </button>
+
+                  <button
+                    data-testid="menu-profile"
+                    onClick={() => { navigate('/profile'); setShowSideMenu(false); }}
+                    className="w-full flex items-center gap-4 px-4 py-4 rounded-xl hover:bg-white/10 transition-all text-left group"
+                  >
+                    <User className="w-5 h-5 text-white group-hover:text-primary transition-colors" />
+                    <span className="font-medium">Profile</span>
+                  </button>
+
+                  <button
+                    data-testid="menu-settings"
+                    onClick={() => { navigate('/settings'); setShowSideMenu(false); }}
+                    className="w-full flex items-center gap-4 px-4 py-4 rounded-xl hover:bg-white/10 transition-all text-left group"
+                  >
+                    <Settings className="w-5 h-5 text-white group-hover:text-primary transition-colors" />
+                    <span className="font-medium">Settings</span>
                   </button>
                 </div>
               </div>
