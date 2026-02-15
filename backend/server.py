@@ -487,6 +487,7 @@ async def init_characters():
 @app.on_event("startup")
 async def startup_event():
     await init_characters()
+    await init_admin()
 
 # Auth Routes
 @api_router.post("/auth/signup")
