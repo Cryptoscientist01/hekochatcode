@@ -736,6 +736,10 @@ Generate a fun, flirty greeting to someone who just started chatting with you.
     # Remove hyphens
     greeting = greeting.replace(" - ", " ").replace("- ", "").replace(" -", "")
     
+    # Add a small delay for realism (1-2 seconds)
+    import random
+    await asyncio.sleep(random.uniform(1.0, 2.0))
+    
     # Save greeting as first message
     ai_msg = Message(
         chat_id=chat_id,
