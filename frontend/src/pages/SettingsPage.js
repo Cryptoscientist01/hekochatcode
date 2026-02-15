@@ -305,7 +305,7 @@ export default function SettingsPage({ user, onLogout }) {
                 <SettingToggle
                   testId="toggle-typing"
                   enabled={settings.showTypingIndicator}
-                  onToggle={() => updateSetting('showTypingIndicator', !settings.showTypingIndicator)}
+                  onToggle={() => handleSettingChange('showTypingIndicator', !settings.showTypingIndicator)}
                 />
               </SettingRow>
 
@@ -318,7 +318,7 @@ export default function SettingsPage({ user, onLogout }) {
                 <SettingToggle
                   testId="toggle-autosave"
                   enabled={settings.autoSaveChat}
-                  onToggle={() => updateSetting('autoSaveChat', !settings.autoSaveChat)}
+                  onToggle={() => handleSettingChange('autoSaveChat', !settings.autoSaveChat)}
                 />
               </SettingRow>
 
@@ -331,7 +331,7 @@ export default function SettingsPage({ user, onLogout }) {
                 <select
                   data-testid="chat-style-select"
                   value={settings.chatBubbleStyle}
-                  onChange={(e) => updateSetting('chatBubbleStyle', e.target.value)}
+                  onChange={(e) => handleSettingChange('chatBubbleStyle', e.target.value)}
                   className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary"
                 >
                   <option value="modern">Modern</option>
