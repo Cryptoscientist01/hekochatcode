@@ -136,6 +136,27 @@ class GeneratedImage(BaseModel):
     style: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Admin Models
+class Admin(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: str
+    username: str
+    password_hash: str
+    is_super_admin: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_login: Optional[datetime] = None
+
+class AdminLogin(BaseModel):
+    email: str
+    password: str
+
+class AdminUpdateCredentials(BaseModel):
+    current_password: str
+    new_email: Optional[str] = None
+    new_username: Optional[str] = None
+    new_password: Optional[str] = None
+
 # Helper function to hash passwords
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
