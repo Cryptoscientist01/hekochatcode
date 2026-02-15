@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Bell, Moon, Sun, Volume2, VolumeX, Shield, Trash2, Download, Globe, Palette, MessageSquare, Eye, EyeOff, ChevronRight, RotateCcw } from "lucide-react";
+import { ArrowLeft, Bell, Moon, Sun, Volume2, VolumeX, Shield, Trash2, Download, Globe, Palette, MessageSquare, Eye, EyeOff, ChevronRight, RotateCcw, BellOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useSettings } from "@/context/SettingsContext";
+import { useNotifications } from "@/hooks/useNotifications";
 import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -13,6 +14,72 @@ const API = `${BACKEND_URL}/api`;
 export default function SettingsPage({ user, onLogout }) {
   const navigate = useNavigate();
   const { settings, updateSetting, resetSettings, playSound } = useSettings();
+  const token = localStorage.getItem('token');
+  const { 
+    permission, 
+    isSubscribed, 
+    loading: notifLoading, 
+    subscribe, 
+    unsubscribe,
+    isSupported,
+    showLocalNotification
+  } = useNotifications(user, token);
+  
+  const [notifFrequency, setNotifFrequency] = useState('medium');
+
+  // Load notification preferences
+  useEffect(() => {
+    const loadPrefs = async () => {
+      if (user?.id) {
+        try {
+          const res = await axios.get(`${API}/push/preferences/${user.id}`);
+          setNotifFrequency(res.data.frequency || 'medium');
+        } catch (e) {
+          // Use default
+        }
+      }
+    };
+    loadPrefs();
+  }, [user]);
+
+  const handleNotificationToggle = async () => {
+    if (isSubscribed) {
+      await unsubscribe();
+      toast.success("Notifications disabled");
+    } else {
+      const success = await subscribe();
+      if (success) {
+        toast.success("Notifications enabled! Your AI companions will reach out when they miss you 💕");
+      } else if (permission === 'denied') {
+        toast.error("Notifications blocked. Please enable in browser settings.");
+      }
+    }
+  };
+
+  const handleNotificationFrequency = async (freq) => {
+    setNotifFrequency(freq);
+    try {
+      await axios.put(`${API}/push/preferences/${user.id}`, {
+        enabled: isSubscribed,
+        frequency: freq,
+        quiet_hours_start: 22,
+        quiet_hours_end: 8
+      });
+      toast.success("Notification frequency updated");
+    } catch (e) {
+      // Silent fail
+    }
+  };
+
+  const handleTestNotification = () => {
+    showLocalNotification(
+      "Sophia",
+      "Hey... I've been thinking about you 💭💕",
+      null,
+      "/characters"
+    );
+    toast.info("Test notification sent!");
+  };
 
   const handleSettingChange = (key, value) => {
     updateSetting(key, value);
