@@ -1367,6 +1367,652 @@ async def admin_delete_character(request: Request, character_id: str, is_custom:
     
     return {"message": "Character deleted successfully"}
 
+# ============ ENHANCED ADMIN FEATURES ============
+
+# --- Models for new features ---
+
+class Announcement(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    message: str
+    type: str = "info"  # info, warning, success, error
+    is_active: bool = True
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AnnouncementCreate(BaseModel):
+    title: str
+    message: str
+    type: str = "info"
+    is_active: bool = True
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+
+class AdminCreate(BaseModel):
+    email: str
+    username: str
+    password: str
+    role: str = "moderator"  # super_admin, admin, moderator
+
+class AdminActivityLog(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    admin_id: str
+    admin_email: str
+    action: str
+    target_type: str  # user, character, chat, announcement, blog, admin
+    target_id: Optional[str] = None
+    details: Optional[str] = None
+    ip_address: Optional[str] = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UserNotification(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None  # None = broadcast to all
+    title: str
+    message: str
+    type: str = "info"
+    is_read: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class NotificationCreate(BaseModel):
+    user_id: Optional[str] = None
+    title: str
+    message: str
+    type: str = "info"
+
+class CharacterUpdate(BaseModel):
+    name: Optional[str] = None
+    age: Optional[int] = None
+    personality: Optional[str] = None
+    traits: Optional[List[str]] = None
+    description: Optional[str] = None
+    occupation: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+class ChatFlag(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    chat_id: str
+    message_id: Optional[str] = None
+    reason: str
+    flagged_by: str
+    status: str = "pending"  # pending, reviewed, resolved
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# --- Helper to log admin activity ---
+async def log_admin_activity(admin_id: str, admin_email: str, action: str, target_type: str, target_id: str = None, details: str = None, ip: str = None):
+    log_entry = {
+        "id": str(uuid.uuid4()),
+        "admin_id": admin_id,
+        "admin_email": admin_email,
+        "action": action,
+        "target_type": target_type,
+        "target_id": target_id,
+        "details": details,
+        "ip_address": ip,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await db.admin_activity_logs.insert_one(log_entry)
+
+# --- Helper to get admin from token ---
+async def get_admin_from_token(request: Request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = auth_header.split(" ")[1]
+    payload = verify_admin_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    
+    admin = await db.admins.find_one({"id": payload['admin_id']}, {"_id": 0, "password_hash": 0})
+    if not admin:
+        raise HTTPException(status_code=401, detail="Admin not found")
+    
+    return admin
+
+# ============ 1. CONTENT MODERATION ============
+
+@api_router.get("/admin/chats")
+async def admin_get_all_chats(request: Request, skip: int = 0, limit: int = 50):
+    """Get all chat conversations for moderation"""
+    admin = await get_admin_from_token(request)
+    
+    pipeline = [
+        {"$group": {
+            "_id": "$chat_id",
+            "message_count": {"$sum": 1},
+            "last_message": {"$last": "$content"},
+            "last_timestamp": {"$last": "$timestamp"}
+        }},
+        {"$sort": {"last_timestamp": -1}},
+        {"$skip": skip},
+        {"$limit": limit}
+    ]
+    
+    chats = await db.messages.aggregate(pipeline).to_list(limit)
+    total = len(await db.messages.aggregate([{"$group": {"_id": "$chat_id"}}]).to_list(10000))
+    
+    # Get user and character info for each chat
+    result = []
+    for chat in chats:
+        parts = chat["_id"].split("_")
+        if len(parts) >= 2:
+            user_id = parts[0]
+            character_id = "_".join(parts[1:])
+            
+            user = await db.users.find_one({"$or": [{"id": user_id}, {"user_id": user_id}]}, {"_id": 0, "username": 1, "email": 1})
+            character = await db.characters.find_one({"id": character_id}, {"_id": 0, "name": 1})
+            if not character:
+                character = await db.custom_characters.find_one({"id": character_id}, {"_id": 0, "name": 1})
+            
+            result.append({
+                "chat_id": chat["_id"],
+                "user_id": user_id,
+                "user_name": user.get("username") if user else "Unknown",
+                "user_email": user.get("email") if user else "Unknown",
+                "character_id": character_id,
+                "character_name": character.get("name") if character else "Unknown",
+                "message_count": chat["message_count"],
+                "last_message": chat["last_message"][:100] + "..." if len(chat["last_message"]) > 100 else chat["last_message"],
+                "last_timestamp": chat["last_timestamp"]
+            })
+    
+    return {"chats": result, "total": total}
+
+@api_router.get("/admin/chats/{chat_id}/messages")
+async def admin_get_chat_messages(request: Request, chat_id: str, limit: int = 100):
+    """Get all messages in a specific chat"""
+    admin = await get_admin_from_token(request)
+    
+    messages = await db.messages.find({"chat_id": chat_id}, {"_id": 0}).sort("timestamp", 1).limit(limit).to_list(limit)
+    return {"messages": messages, "chat_id": chat_id}
+
+@api_router.delete("/admin/chats/{chat_id}")
+async def admin_delete_chat(request: Request, chat_id: str):
+    """Delete an entire chat conversation"""
+    admin = await get_admin_from_token(request)
+    
+    result = await db.messages.delete_many({"chat_id": chat_id})
+    
+    await log_admin_activity(admin['id'], admin['email'], "delete_chat", "chat", chat_id, f"Deleted {result.deleted_count} messages")
+    
+    return {"message": f"Deleted {result.deleted_count} messages", "deleted_count": result.deleted_count}
+
+@api_router.delete("/admin/messages/{message_id}")
+async def admin_delete_message(request: Request, message_id: str):
+    """Delete a specific message"""
+    admin = await get_admin_from_token(request)
+    
+    result = await db.messages.delete_one({"id": message_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    await log_admin_activity(admin['id'], admin['email'], "delete_message", "chat", message_id)
+    
+    return {"message": "Message deleted"}
+
+@api_router.post("/admin/chats/flag")
+async def admin_flag_chat(request: Request, chat_id: str, reason: str, message_id: str = None):
+    """Flag a chat or message for review"""
+    admin = await get_admin_from_token(request)
+    
+    flag = {
+        "id": str(uuid.uuid4()),
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "reason": reason,
+        "flagged_by": admin['email'],
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.chat_flags.insert_one(flag)
+    await log_admin_activity(admin['id'], admin['email'], "flag_chat", "chat", chat_id, reason)
+    
+    return {"message": "Chat flagged", "flag_id": flag['id']}
+
+@api_router.get("/admin/chats/flags")
+async def admin_get_flagged_chats(request: Request, status: str = None):
+    """Get all flagged chats"""
+    admin = await get_admin_from_token(request)
+    
+    query = {} if not status else {"status": status}
+    flags = await db.chat_flags.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    return {"flags": flags}
+
+@api_router.put("/admin/chats/flags/{flag_id}")
+async def admin_update_flag_status(request: Request, flag_id: str, status: str):
+    """Update flag status"""
+    admin = await get_admin_from_token(request)
+    
+    result = await db.chat_flags.update_one({"id": flag_id}, {"$set": {"status": status}})
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Flag not found")
+    
+    await log_admin_activity(admin['id'], admin['email'], "update_flag", "chat", flag_id, f"Status: {status}")
+    
+    return {"message": "Flag updated"}
+
+# ============ 2. SITE ANNOUNCEMENTS ============
+
+@api_router.get("/announcements/active")
+async def get_active_announcements():
+    """Get active announcements (public endpoint)"""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    query = {
+        "is_active": True,
+        "$or": [
+            {"start_date": None, "end_date": None},
+            {"start_date": {"$lte": now}, "end_date": None},
+            {"start_date": None, "end_date": {"$gte": now}},
+            {"start_date": {"$lte": now}, "end_date": {"$gte": now}}
+        ]
+    }
+    
+    announcements = await db.announcements.find(query, {"_id": 0}).sort("created_at", -1).to_list(10)
+    return {"announcements": announcements}
+
+@api_router.get("/admin/announcements")
+async def admin_get_all_announcements(request: Request):
+    """Get all announcements"""
+    admin = await get_admin_from_token(request)
+    
+    announcements = await db.announcements.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"announcements": announcements}
+
+@api_router.post("/admin/announcements")
+async def admin_create_announcement(request: Request, data: AnnouncementCreate):
+    """Create a new announcement"""
+    admin = await get_admin_from_token(request)
+    
+    announcement = {
+        "id": str(uuid.uuid4()),
+        "title": data.title,
+        "message": data.message,
+        "type": data.type,
+        "is_active": data.is_active,
+        "start_date": data.start_date,
+        "end_date": data.end_date,
+        "created_by": admin['email'],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.announcements.insert_one(announcement)
+    await log_admin_activity(admin['id'], admin['email'], "create_announcement", "announcement", announcement['id'], data.title)
+    
+    return {"announcement": announcement, "message": "Announcement created"}
+
+@api_router.put("/admin/announcements/{announcement_id}")
+async def admin_update_announcement(request: Request, announcement_id: str, data: AnnouncementCreate):
+    """Update an announcement"""
+    admin = await get_admin_from_token(request)
+    
+    updates = {
+        "title": data.title,
+        "message": data.message,
+        "type": data.type,
+        "is_active": data.is_active,
+        "start_date": data.start_date,
+        "end_date": data.end_date
+    }
+    
+    result = await db.announcements.update_one({"id": announcement_id}, {"$set": updates})
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    
+    await log_admin_activity(admin['id'], admin['email'], "update_announcement", "announcement", announcement_id)
+    
+    return {"message": "Announcement updated"}
+
+@api_router.delete("/admin/announcements/{announcement_id}")
+async def admin_delete_announcement(request: Request, announcement_id: str):
+    """Delete an announcement"""
+    admin = await get_admin_from_token(request)
+    
+    result = await db.announcements.delete_one({"id": announcement_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    
+    await log_admin_activity(admin['id'], admin['email'], "delete_announcement", "announcement", announcement_id)
+    
+    return {"message": "Announcement deleted"}
+
+# ============ 3. CHAT ANALYTICS ============
+
+@api_router.get("/admin/analytics/chats")
+async def admin_chat_analytics(request: Request):
+    """Get detailed chat analytics"""
+    admin = await get_admin_from_token(request)
+    
+    # Most active users (by message count)
+    active_users_pipeline = [
+        {"$addFields": {"user_id": {"$arrayElemAt": [{"$split": ["$chat_id", "_"]}, 0]}}},
+        {"$group": {"_id": "$user_id", "message_count": {"$sum": 1}}},
+        {"$sort": {"message_count": -1}},
+        {"$limit": 10}
+    ]
+    active_users = await db.messages.aggregate(active_users_pipeline).to_list(10)
+    
+    # Enrich with user details
+    for user in active_users:
+        user_doc = await db.users.find_one({"$or": [{"id": user["_id"]}, {"user_id": user["_id"]}]}, {"_id": 0, "username": 1, "email": 1})
+        user["username"] = user_doc.get("username") if user_doc else "Unknown"
+        user["email"] = user_doc.get("email") if user_doc else "Unknown"
+    
+    # Most popular characters
+    popular_chars_pipeline = [
+        {"$addFields": {"parts": {"$split": ["$chat_id", "_"]}}},
+        {"$addFields": {"character_id": {"$reduce": {
+            "input": {"$slice": ["$parts", 1, {"$subtract": [{"$size": "$parts"}, 1]}]},
+            "initialValue": "",
+            "in": {"$cond": [{"$eq": ["$$value", ""]}, "$$this", {"$concat": ["$$value", "_", "$$this"]}]}
+        }}}},
+        {"$group": {"_id": "$character_id", "chat_count": {"$sum": 1}}},
+        {"$sort": {"chat_count": -1}},
+        {"$limit": 10}
+    ]
+    popular_chars = await db.messages.aggregate(popular_chars_pipeline).to_list(10)
+    
+    # Enrich with character details
+    for char in popular_chars:
+        char_doc = await db.characters.find_one({"id": char["_id"]}, {"_id": 0, "name": 1, "avatar_url": 1})
+        if not char_doc:
+            char_doc = await db.custom_characters.find_one({"id": char["_id"]}, {"_id": 0, "name": 1, "avatar_url": 1})
+        char["name"] = char_doc.get("name") if char_doc else "Unknown"
+        char["avatar_url"] = char_doc.get("avatar_url") if char_doc else None
+    
+    # Messages by day (last 14 days)
+    messages_by_day = []
+    for i in range(14):
+        day = datetime.now(timezone.utc) - timedelta(days=i)
+        day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+        count = await db.messages.count_documents({
+            "timestamp": {"$gte": day_start.isoformat(), "$lt": day_end.isoformat()}
+        })
+        messages_by_day.append({"date": day_start.strftime("%Y-%m-%d"), "count": count})
+    
+    # Messages by hour (last 24 hours)
+    messages_by_hour = []
+    for i in range(24):
+        hour_start = datetime.now(timezone.utc) - timedelta(hours=i+1)
+        hour_end = hour_start + timedelta(hours=1)
+        count = await db.messages.count_documents({
+            "timestamp": {"$gte": hour_start.isoformat(), "$lt": hour_end.isoformat()}
+        })
+        messages_by_hour.append({"hour": hour_start.strftime("%H:00"), "count": count})
+    
+    # Average messages per user
+    total_messages = await db.messages.count_documents({})
+    total_users = await db.users.count_documents({})
+    avg_messages = round(total_messages / max(total_users, 1), 2)
+    
+    return {
+        "most_active_users": active_users,
+        "most_popular_characters": popular_chars,
+        "messages_by_day": list(reversed(messages_by_day)),
+        "messages_by_hour": list(reversed(messages_by_hour)),
+        "average_messages_per_user": avg_messages,
+        "total_messages": total_messages
+    }
+
+# ============ 4. CHARACTER EDITOR ============
+
+@api_router.put("/admin/characters/{character_id}")
+async def admin_update_character(request: Request, character_id: str, data: CharacterUpdate, is_custom: bool = False):
+    """Update a character's details"""
+    admin = await get_admin_from_token(request)
+    
+    updates = {k: v for k, v in data.model_dump().items() if v is not None}
+    
+    if not updates:
+        raise HTTPException(status_code=400, detail="No updates provided")
+    
+    collection = db.custom_characters if is_custom else db.characters
+    result = await collection.update_one({"id": character_id}, {"$set": updates})
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Character not found")
+    
+    await log_admin_activity(admin['id'], admin['email'], "update_character", "character", character_id, str(updates))
+    
+    updated = await collection.find_one({"id": character_id}, {"_id": 0})
+    return {"character": updated, "message": "Character updated"}
+
+# ============ 5. USER NOTIFICATIONS ============
+
+@api_router.get("/notifications/{user_id}")
+async def get_user_notifications(user_id: str, unread_only: bool = False):
+    """Get notifications for a user (includes broadcasts)"""
+    query = {"$or": [{"user_id": user_id}, {"user_id": None}]}
+    if unread_only:
+        query["is_read"] = False
+    
+    notifications = await db.notifications.find(query, {"_id": 0}).sort("created_at", -1).limit(50).to_list(50)
+    return {"notifications": notifications}
+
+@api_router.put("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str):
+    """Mark a notification as read"""
+    await db.notifications.update_one({"id": notification_id}, {"$set": {"is_read": True}})
+    return {"message": "Notification marked as read"}
+
+@api_router.post("/admin/notifications")
+async def admin_send_notification(request: Request, data: NotificationCreate):
+    """Send a notification to a user or broadcast to all"""
+    admin = await get_admin_from_token(request)
+    
+    notification = {
+        "id": str(uuid.uuid4()),
+        "user_id": data.user_id,  # None for broadcast
+        "title": data.title,
+        "message": data.message,
+        "type": data.type,
+        "is_read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.notifications.insert_one(notification)
+    
+    target = data.user_id or "all users"
+    await log_admin_activity(admin['id'], admin['email'], "send_notification", "notification", notification['id'], f"To: {target}")
+    
+    return {"notification": notification, "message": "Notification sent"}
+
+@api_router.get("/admin/notifications")
+async def admin_get_all_notifications(request: Request, limit: int = 100):
+    """Get all sent notifications"""
+    admin = await get_admin_from_token(request)
+    
+    notifications = await db.notifications.find({}, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    return {"notifications": notifications}
+
+# ============ 6. REVENUE DASHBOARD (MOCK) ============
+
+@api_router.get("/admin/analytics/revenue")
+async def admin_revenue_analytics(request: Request):
+    """Get revenue analytics (currently mocked - will be real when Stripe is integrated)"""
+    admin = await get_admin_from_token(request)
+    
+    # Count users by subscription type (mock data based on user count)
+    total_users = await db.users.count_documents({})
+    
+    # Mock subscription distribution (80% free, 15% premium, 5% ultimate)
+    free_users = int(total_users * 0.80)
+    premium_users = int(total_users * 0.15)
+    ultimate_users = total_users - free_users - premium_users
+    
+    # Mock revenue calculations
+    premium_price = 9.99
+    ultimate_price = 19.99
+    
+    monthly_revenue = (premium_users * premium_price) + (ultimate_users * ultimate_price)
+    
+    # Mock revenue trend (last 6 months)
+    revenue_trend = []
+    for i in range(6):
+        month = datetime.now(timezone.utc) - timedelta(days=30*i)
+        # Simulate growth
+        multiplier = 1 - (i * 0.1)
+        revenue_trend.append({
+            "month": month.strftime("%b %Y"),
+            "revenue": round(monthly_revenue * multiplier, 2)
+        })
+    
+    return {
+        "subscription_breakdown": {
+            "free": free_users,
+            "premium": premium_users,
+            "ultimate": ultimate_users
+        },
+        "monthly_revenue": round(monthly_revenue, 2),
+        "annual_projected": round(monthly_revenue * 12, 2),
+        "revenue_trend": list(reversed(revenue_trend)),
+        "is_mocked": True,
+        "note": "This data is simulated. Integrate Stripe for real revenue tracking."
+    }
+
+# ============ 7. ADMIN ROLES & MANAGEMENT ============
+
+@api_router.get("/admin/admins")
+async def admin_get_all_admins(request: Request):
+    """Get all admin accounts"""
+    admin = await get_admin_from_token(request)
+    
+    if not admin.get("is_super_admin"):
+        raise HTTPException(status_code=403, detail="Super admin access required")
+    
+    admins = await db.admins.find({}, {"_id": 0, "password_hash": 0}).to_list(100)
+    return {"admins": admins}
+
+@api_router.post("/admin/admins")
+async def admin_create_admin(request: Request, data: AdminCreate):
+    """Create a new admin account"""
+    admin = await get_admin_from_token(request)
+    
+    if not admin.get("is_super_admin"):
+        raise HTTPException(status_code=403, detail="Super admin access required")
+    
+    # Check if email already exists
+    existing = await db.admins.find_one({"email": data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    new_admin = {
+        "id": str(uuid.uuid4()),
+        "email": data.email,
+        "username": data.username,
+        "password_hash": hash_password(data.password),
+        "role": data.role,
+        "is_super_admin": data.role == "super_admin",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_login": None
+    }
+    
+    await db.admins.insert_one(new_admin)
+    await log_admin_activity(admin['id'], admin['email'], "create_admin", "admin", new_admin['id'], f"Role: {data.role}")
+    
+    new_admin.pop("password_hash")
+    return {"admin": new_admin, "message": "Admin created"}
+
+@api_router.delete("/admin/admins/{admin_id}")
+async def admin_delete_admin(request: Request, admin_id: str):
+    """Delete an admin account"""
+    admin = await get_admin_from_token(request)
+    
+    if not admin.get("is_super_admin"):
+        raise HTTPException(status_code=403, detail="Super admin access required")
+    
+    if admin['id'] == admin_id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    
+    result = await db.admins.delete_one({"id": admin_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    
+    await log_admin_activity(admin['id'], admin['email'], "delete_admin", "admin", admin_id)
+    
+    return {"message": "Admin deleted"}
+
+@api_router.put("/admin/admins/{admin_id}/role")
+async def admin_update_admin_role(request: Request, admin_id: str, role: str):
+    """Update an admin's role"""
+    admin = await get_admin_from_token(request)
+    
+    if not admin.get("is_super_admin"):
+        raise HTTPException(status_code=403, detail="Super admin access required")
+    
+    is_super = role == "super_admin"
+    result = await db.admins.update_one({"id": admin_id}, {"$set": {"role": role, "is_super_admin": is_super}})
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    
+    await log_admin_activity(admin['id'], admin['email'], "update_admin_role", "admin", admin_id, f"New role: {role}")
+    
+    return {"message": "Admin role updated"}
+
+# ============ 8. ACTIVITY LOGS ============
+
+@api_router.get("/admin/activity-logs")
+async def admin_get_activity_logs(request: Request, skip: int = 0, limit: int = 100, action: str = None, admin_id: str = None):
+    """Get admin activity logs"""
+    admin = await get_admin_from_token(request)
+    
+    query = {}
+    if action:
+        query["action"] = action
+    if admin_id:
+        query["admin_id"] = admin_id
+    
+    logs = await db.admin_activity_logs.find(query, {"_id": 0}).sort("timestamp", -1).skip(skip).limit(limit).to_list(limit)
+    total = await db.admin_activity_logs.count_documents(query)
+    
+    return {"logs": logs, "total": total}
+
+@api_router.get("/admin/activity-logs/summary")
+async def admin_get_activity_summary(request: Request):
+    """Get activity logs summary"""
+    admin = await get_admin_from_token(request)
+    
+    # Actions by type
+    actions_pipeline = [
+        {"$group": {"_id": "$action", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    actions = await db.admin_activity_logs.aggregate(actions_pipeline).to_list(20)
+    
+    # Actions by admin
+    admins_pipeline = [
+        {"$group": {"_id": "$admin_email", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    admin_actions = await db.admin_activity_logs.aggregate(admins_pipeline).to_list(10)
+    
+    # Recent activity (last 24 hours)
+    yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+    recent_count = await db.admin_activity_logs.count_documents({"timestamp": {"$gte": yesterday.isoformat()}})
+    
+    return {
+        "actions_by_type": [{"action": a["_id"], "count": a["count"]} for a in actions],
+        "actions_by_admin": [{"admin": a["_id"], "count": a["count"]} for a in admin_actions],
+        "recent_activity_count": recent_count,
+        "total_logs": await db.admin_activity_logs.count_documents({})
+    }
+
 # ============ BLOG ROUTES (SEO FRIENDLY) ============
 
 class BlogPost(BaseModel):
