@@ -166,6 +166,22 @@ Build a fully functional AI companion web app similar to candy.ai with features 
   - Inactivity detection (4+ hours)
   - Notification history tracking
   - Backend endpoints for push subscription, preferences, generation
+  - **Automatic Notification Scheduler**: APScheduler running in backend:
+    - Random notifications every 2 hours
+    - Inactivity notifications every 4 hours
+    - VAPID keys configured for real push delivery
+
+- [x] **Multi-Payment Gateway System**:
+  - Stripe integration using emergentintegrations library (WORKING)
+  - PayPal integration (DEMO/MOCK mode - requires user confirmation)
+  - Subscription plans: Free, Premium ($9.99/month or $59.99/year), Ultimate ($19.99/month or $119.99/year)
+  - Payment method toggle (Stripe/PayPal) on subscription page
+  - Billing cycle toggle (Monthly/Yearly)
+  - Checkout session creation with transaction tracking
+  - Payment success page with confetti animation
+  - User subscription status tracking
+  - Payment history endpoint
+  - Webhook handler for Stripe events
 
 ### Key Push Notification API Endpoints
 - `GET /api/push/vapid-public-key` - Get VAPID key for push subscription
