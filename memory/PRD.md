@@ -112,6 +112,11 @@ Build a fully functional AI companion web app similar to candy.ai with features 
 - [x] Favorite toggle on chat page
 - [x] Testing (100% pass rate)
 
+### Completed (February 2026)
+- [x] **Bug Fix**: Chat with custom characters now working (fixed `/api/chat/send` to check both `characters` and `custom_characters` collections)
+- [x] **Bug Fix**: Image generation in chat with custom characters now working (same fix for `/api/image/generate`)
+- [x] **UI Fix**: Removed character count from "My AI Characters" page
+
 ### Backlog (P2)
 - [ ] Premium subscription features
 - [ ] Advanced voice selection per character
