@@ -269,7 +269,8 @@ function App() {
         <BrowserRouter>
           <AppRouter 
             user={user} 
-            setUser={setUser} 
+            setUser={setUser}
+            token={token}
             setToken={setToken}
             admin={admin}
             setAdmin={setAdmin}
