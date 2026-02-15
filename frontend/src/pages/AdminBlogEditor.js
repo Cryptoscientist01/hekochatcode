@@ -57,13 +57,13 @@ export default function AdminBlogEditor({ adminToken: propToken }) {
   };
 
   useEffect(() => {
-    if (view === "list") {
+    if (adminToken && view === "list") {
       fetchPosts();
     }
-    if (postId) {
+    if (adminToken && postId) {
       fetchPost(postId);
     }
-  }, [view, postId]);
+  }, [view, postId, adminToken]);
 
   const fetchPosts = async () => {
     setLoading(true);
