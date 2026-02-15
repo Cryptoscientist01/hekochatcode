@@ -9,6 +9,9 @@ import CollectionPage from "./pages/CollectionPage";
 import GenerateImagePage from "./pages/GenerateImagePage";
 import CreateCharacterPage from "./pages/CreateCharacterPage";
 import MyAIPage from "./pages/MyAIPage";
+import SubscriptionPage from "./pages/SubscriptionPage";
+import ProfilePage from "./pages/ProfilePage";
+import SettingsPage from "./pages/SettingsPage";
 import { Toaster } from "@/components/ui/sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
