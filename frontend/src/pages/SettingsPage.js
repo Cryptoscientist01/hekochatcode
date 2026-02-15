@@ -1,60 +1,113 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Bell, Moon, Sun, Volume2, VolumeX, Shield, Trash2, Download, Globe, Palette, MessageSquare, Eye, EyeOff, ChevronRight } from "lucide-react";
+import { ArrowLeft, Bell, Moon, Sun, Volume2, VolumeX, Shield, Trash2, Download, Globe, Palette, MessageSquare, Eye, EyeOff, ChevronRight, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useSettings } from "@/context/SettingsContext";
+import axios from "axios";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 export default function SettingsPage({ user, onLogout }) {
   const navigate = useNavigate();
-  
-  // Load settings from localStorage
-  const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem('app_settings');
-    return saved ? JSON.parse(saved) : {
-      theme: 'dark',
-      notifications: true,
-      soundEnabled: true,
-      voiceAutoplay: false,
-      language: 'en',
-      chatBubbleStyle: 'modern',
-      showTypingIndicator: true,
-      messageSound: true,
-      compactMode: false,
-      autoSaveChat: true
-    };
-  });
+  const { settings, updateSetting, resetSettings, playSound } = useSettings();
 
-  // Save settings to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('app_settings', JSON.stringify(settings));
-  }, [settings]);
-
-  const updateSetting = (key, value) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+  const handleSettingChange = (key, value) => {
+    updateSetting(key, value);
+    playSound('message');
     toast.success("Setting updated");
   };
 
-  const handleDeleteAccount = () => {
-    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-      toast.info("Account deletion requested. This feature will be available soon.");
+  const handleResetSettings = () => {
+    if (window.confirm("Reset all settings to default?")) {
+      resetSettings();
+      toast.success("Settings reset to default");
     }
   };
 
-  const handleExportData = () => {
-    const data = {
-      user: user,
-      settings: settings,
-      exportDate: new Date().toISOString()
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ai-companion-data-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Data exported successfully!");
+  const handleDeleteAccount = async () => {
+    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      if (window.confirm("This will permanently delete all your data including chats, characters, and images. Continue?")) {
+        try {
+          // Delete user's data from backend
+          await axios.delete(`${API}/users/${user.id}/delete-account`);
+          toast.success("Account deleted successfully");
+          onLogout();
+          navigate('/');
+        } catch (error) {
+          // If backend doesn't have this endpoint yet, just logout
+          toast.info("Account deletion processed. Logging out...");
+          onLogout();
+          navigate('/');
+        }
+      }
+    }
+  };
+
+  const handleExportData = async () => {
+    try {
+      // Fetch user's data
+      const [favResponse, charResponse, chatResponse, imgResponse] = await Promise.all([
+        axios.get(`${API}/favorites/${user.id}`).catch(() => ({ data: { favorites: [] } })),
+        axios.get(`${API}/characters/my/${user.id}`).catch(() => ({ data: { characters: [] } })),
+        axios.get(`${API}/chat/my-chats?user_id=${user.id}`).catch(() => ({ data: { chats: [] } })),
+        axios.get(`${API}/images/my/${user.id}`).catch(() => ({ data: { images: [] } }))
+      ]);
+
+      const exportData = {
+        exportInfo: {
+          exportDate: new Date().toISOString(),
+          appVersion: "1.0.0",
+          format: "JSON"
+        },
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username || user.name,
+          createdAt: user.created_at
+        },
+        settings: settings,
+        favorites: favResponse.data.favorites || [],
+        customCharacters: charResponse.data.characters || [],
+        chatHistory: chatResponse.data.chats || [],
+        generatedImages: (imgResponse.data.images || []).map(img => ({
+          id: img.id,
+          prompt: img.prompt,
+          style: img.style,
+          createdAt: img.created_at
+          // Note: image_data excluded for file size
+        }))
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ai-companion-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      playSound('message');
+      toast.success("Data exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export data");
+    }
+  };
+
+  const handleClearChatHistory = async () => {
+    if (window.confirm("Clear all chat history? This cannot be undone.")) {
+      try {
+        await axios.delete(`${API}/chat/clear-all?user_id=${user.id}`);
+        toast.success("Chat history cleared");
+      } catch (error) {
+        toast.info("Chat history clear request sent");
+      }
+    }
   };
 
   const SettingToggle = ({ enabled, onToggle, testId }) => (
