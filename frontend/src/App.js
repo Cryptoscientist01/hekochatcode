@@ -124,6 +124,30 @@ function AppRouter({ user, setUser, setToken }) {
           user ? <ChatPage user={user} onLogout={handleLogout} /> : <Navigate to="/auth" />
         } 
       />
+      <Route 
+        path="/collection" 
+        element={
+          user ? <CollectionPage user={user} onLogout={handleLogout} /> : <Navigate to="/auth" />
+        } 
+      />
+      <Route 
+        path="/generate-image" 
+        element={
+          user ? <GenerateImagePage user={user} /> : <Navigate to="/auth" />
+        } 
+      />
+      <Route 
+        path="/create-character" 
+        element={
+          user ? <CreateCharacterPage user={user} /> : <Navigate to="/auth" />
+        } 
+      />
+      <Route 
+        path="/my-ai" 
+        element={
+          user ? <MyAIPage user={user} /> : <Navigate to="/auth" />
+        } 
+      />
     </Routes>
   );
 }
