@@ -167,6 +167,16 @@ Build a fully functional AI companion web app similar to candy.ai with features 
   - Notification history tracking
   - Backend endpoints for push subscription, preferences, generation
 
+### Key Push Notification API Endpoints
+- `GET /api/push/vapid-public-key` - Get VAPID key for push subscription
+- `POST /api/push/subscribe` - Subscribe to push notifications
+- `POST /api/push/unsubscribe` - Unsubscribe from notifications
+- `GET/PUT /api/push/preferences/{user_id}` - Get/update notification preferences
+- `POST /api/push/update-activity` - Update user activity timestamp
+- `GET /api/push/generate-notification/{user_id}` - Generate a notification for user
+- `GET /api/push/check-inactivity` - Get list of inactive users
+- `GET /api/push/notification-history/{user_id}` - Get sent notification history
+
 ### Key Admin API Endpoints (New)
 - `GET /api/admin/analytics/chats` - Chat analytics (active users, popular characters)
 - `GET /api/admin/analytics/revenue` - Revenue dashboard (MOCKED)
