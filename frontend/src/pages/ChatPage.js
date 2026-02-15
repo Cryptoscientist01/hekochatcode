@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 import { toast } from "sonner";
+import { useSettings } from "@/context/SettingsContext";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -13,6 +14,7 @@ const API = `${BACKEND_URL}/api`;
 export default function ChatPage({ user, onLogout }) {
   const navigate = useNavigate();
   const { characterId } = useParams();
+  const { settings, playSound } = useSettings();
   const [character, setCharacter] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
