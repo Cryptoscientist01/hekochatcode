@@ -1656,6 +1656,7 @@ async def admin_create_announcement(request: Request, data: AnnouncementCreate):
     }
     
     await db.announcements.insert_one(announcement)
+    announcement.pop("_id", None)  # Remove MongoDB's _id
     await log_admin_activity(admin['id'], admin['email'], "create_announcement", "announcement", announcement['id'], data.title)
     
     return {"announcement": announcement, "message": "Announcement created"}
