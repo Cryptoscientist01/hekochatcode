@@ -818,7 +818,10 @@ async def generate_voice(request: VoiceGenerateRequest):
 # Image Routes
 @api_router.post("/image/generate")
 async def generate_image(request: ImageGenerateRequest):
+    # Check both regular characters and custom characters
     character = await db.characters.find_one({"id": request.character_id}, {"_id": 0})
+    if not character:
+        character = await db.custom_characters.find_one({"id": request.character_id}, {"_id": 0})
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
     
