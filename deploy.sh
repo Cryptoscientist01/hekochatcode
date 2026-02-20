@@ -98,7 +98,7 @@ echo "Step 7: Configuring PM2..."
 cd $APP_DIR
 
 # Start backend with PM2
-pm2 delete aicompanion-backend 2>/dev/null || true
+pm2 delete hekochat-backend 2>/dev/null || true
 pm2 start ecosystem.config.js
 pm2 save
 pm2 startup systemd -u root --hp /root
@@ -107,12 +107,9 @@ print_status "PM2 configured"
 echo ""
 echo "Step 8: Configuring Nginx..."
 
-# Update nginx config with domain
-sed -i "s/yourdomain.com/$DOMAIN/g" $APP_DIR/nginx.conf
-
 # Copy nginx config
-cp $APP_DIR/nginx.conf /etc/nginx/sites-available/aicompanion
-ln -sf /etc/nginx/sites-available/aicompanion /etc/nginx/sites-enabled/
+cp $APP_DIR/nginx.conf /etc/nginx/sites-available/hekochat
+ln -sf /etc/nginx/sites-available/hekochat /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
 # Test and restart nginx
