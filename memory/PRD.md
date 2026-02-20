@@ -1,7 +1,9 @@
-# AI Companion Web App - Product Requirements Document
+# HekoChat.ai - Product Requirements Document
 
 ## Original Problem Statement
 Build a fully functional AI companion web app similar to candy.ai with features for text chat, voice interaction, and image generation. The app should have 20+ unique avatars categorized into "Girls", "Anime", and "Guys".
+
+**Domain:** hekochat.ai
 
 ## User Personas
 - Users seeking AI companionship and conversation
@@ -17,6 +19,27 @@ Build a fully functional AI companion web app similar to candy.ai with features 
 6. **Favorites/Collection**: Save and manage favorite characters
 7. **Custom Characters**: Create your own AI companions
 8. **Standalone Image Generation**: Generate images from text prompts
+
+## Deployment Architecture (Split)
+```
+┌─────────────────────────────────────┐
+│         hekochat.ai                 │
+│    (Hostinger Business Hosting)     │
+│      React Frontend (Static)        │
+└─────────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────┐
+│      api.hekochat.ai / Railway      │
+│        FastAPI Backend              │
+└─────────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────┐
+│         MongoDB Atlas               │
+│        (Free M0 Cluster)            │
+└─────────────────────────────────────┘
+```
 
 ## Technical Architecture
 ```
