@@ -11,7 +11,7 @@ echo "=========================================="
 
 # Configuration
 APP_DIR="/var/www/aicompanion"
-DOMAIN=${1:-"yourdomain.com"}
+DOMAIN=${1:-"hekochat.ai"}
 
 # Colors for output
 RED='\033[0;31m'
