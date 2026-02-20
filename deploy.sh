@@ -10,7 +10,7 @@ echo "AI Companion - Deployment Script"
 echo "=========================================="
 
 # Configuration
-APP_DIR="/var/www/aicompanion"
+APP_DIR="/var/www/hekochat"
 DOMAIN=${1:-"hekochat.ai"}
 
 # Colors for output
